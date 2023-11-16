@@ -1088,7 +1088,7 @@ if __name__ == '__main__':
             "书籍一览.json": parse_book_list,
         },
         "成就一览": {
-            "achievement.json": parse_achievement_list,
+            "成就一览.json": parse_achievement_list,
         },
         "任务": {
             "魔神任务.json": parse_archon_quest_list,
