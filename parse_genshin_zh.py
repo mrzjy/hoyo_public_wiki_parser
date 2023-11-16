@@ -75,21 +75,20 @@ def parse_main_page(route="/ys/%E9%A6%96%E9%A1%B5"):
 def parse_character_list(route="/ys/%E8%A7%92%E8%89%B2"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
+    results = {}
     tab_contents = soup.find_all(class_="resp-tab-content")
-
-    map_name_to_info = {}
     for tab_content in tab_contents:
         tabs = tab_content.find_all(class_="g C5星")
         tabs += tab_content.find_all(class_="g C4星")
         for tab in tabs:
             title = tab.find(class_="L").text
             link = tab.find_all("a")[-1]["href"]
-            if title in map_name_to_info:
+            if title in results:
                 continue
             # parse each character page
-            map_name_to_info[title] = parse_character_info(link)
-            print(f"Name: {title} {map_name_to_info[title]}")
-    return map_name_to_info
+            results[title] = parse_character_info(link)
+            print(f"{title} {results[title]}")
+    return results
 
 
 def parse_character_info(route):
@@ -175,9 +174,8 @@ def parse_character_info(route):
 def parse_character_voices(route="/ys/%E8%A7%92%E8%89%B2%E8%AF%AD%E9%9F%B3"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
+    results = {}
     tab_content = soup.find(class_="resp-tab-content")
-
-    map_name_to_info = {}
     tabs = tab_content.find_all(class_="home-box-tag-1")
 
     # additional two
@@ -185,16 +183,16 @@ def parse_character_voices(route="/ys/%E8%A7%92%E8%89%B2%E8%AF%AD%E9%9F%B3"):
         ["旅行者语音/荧", "/ys/%E6%97%85%E8%A1%8C%E8%80%85%E8%AF%AD%E9%9F%B3/%E8%8D%A7"],
         ["旅行者语音/空", "/ys/%E6%97%85%E8%A1%8C%E8%80%85%E8%AF%AD%E9%9F%B3/%E7%A9%BA"],
     ]:
-        map_name_to_info[title] = parse_voice_page(link)
-        print(f"Name: {title} {map_name_to_info[title]}")
+        results[title] = parse_voice_page(link)
+        print(f"{title} {results[title]}")
 
     for tab in tabs:
         tab = tab.find("a")
         title, link = tab['title'], tab["href"]
         if "语音" in title:
-            map_name_to_info[title] = parse_voice_page(link)
-            print(f"Title: {title} {link}")
-    return map_name_to_info
+            results[title] = parse_voice_page(link)
+            print(f"{title} {results[title]}")
+    return results
 
 
 def parse_voice_page(route):
@@ -222,23 +220,23 @@ def parse_character_outfits(route="/ys/%E8%A3%85%E6%89%AE"):
     soup = BeautifulSoup(html, 'html.parser')
     table = soup.find("table")
 
-    map_title_to_info = {}
+    results = {}
     for row in table.find_all("tr"):
         try:
             info = row.find("a")
             title, link = info['title'], info["href"]
             get, rarity, sort = row["data-param1"], row["data-param2"], row["data-param3"]
-            map_title_to_info[title] = parse_outfit(link, sort)
+            results[title] = parse_outfit(link, sort)
             addition_map = {
                 "来源": get, "稀有度": f"{rarity}星", "类型": sort,
             }
             for key, item in addition_map.items():
-                if key not in map_title_to_info[title]:
-                    map_title_to_info[title][key] = item
-            print(f"Title: {title} {map_title_to_info[title]}")
+                if key not in results[title]:
+                    results[title][key] = item
+            print(f"{title} {results[title]}")
         except:
             continue
-    return map_title_to_info
+    return results
 
 
 def parse_outfit(route, sort):
@@ -267,13 +265,13 @@ def parse_outfit(route, sort):
 def parse_weapon_list(route="/ys/%E6%AD%A6%E5%99%A8%E4%B8%80%E8%A7%88"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
-    map_title_to_info = {}
+    results = {}
     for s in soup.find_all("div", class_="g"):
         info = s.find_all('a')[-1]
         title, link = info['title'], info["href"]
-        map_title_to_info[title] = parse_weapon(link)
-        print(f"Title: {title} {map_title_to_info[title]}")
-    return map_title_to_info
+        results[title] = parse_weapon(link)
+        print(f"{title} {results[title]}")
+    return results
 
 
 def parse_weapon(route):
@@ -303,13 +301,13 @@ def parse_weapon(route):
 def parse_relic_list(route="/ys/%E5%9C%A3%E9%81%97%E7%89%A9%E4%B8%80%E8%A7%88"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
-    map_title_to_info = {}
+    results = {}
     for s in soup.find_all("div", class_="g"):
         info = s.find_all('a')[-1]
         title, link = info['title'], info["href"]
-        map_title_to_info[title] = parse_relic(link)
-        print(f"Title: {title} {map_title_to_info[title]}")
-    return map_title_to_info
+        results[title] = parse_relic(link)
+        print(f"{title} {results[title]}")
+    return results
 
 
 def parse_relic(route):
@@ -351,13 +349,13 @@ def parse_relic(route):
 def parse_npc_list(route="/ys/NPC%E5%9B%BE%E9%89%B4"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
-    map_title_to_info = {}
+    results = {}
     npcs = list(soup.find_all("div", class_="giconCard"))
     for s in tqdm(npcs):
         npc = s.find_all("a")[-1]
-        map_title_to_info[npc.text.strip()] = parse_npc(npc["href"])
-        print(map_title_to_info[npc.text.strip()])
-    return map_title_to_info
+        results[npc.text.strip()] = parse_npc(npc["href"])
+        print(results[npc.text.strip()])
+    return results
 
 
 def parse_npc(route):
@@ -450,7 +448,7 @@ def parse_conversation(soup):
 def parse_food_list(route="/ys/%E9%A3%9F%E7%89%A9%E4%B8%80%E8%A7%88"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
-    map_title_to_info = {}
+    results = {}
     table = soup.find("table", {"id": "CardSelectTr"})
     rows = table.find_all('tr')
     header_row = rows[0]
@@ -465,16 +463,16 @@ def parse_food_list(route="/ys/%E9%A3%9F%E7%89%A9%E4%B8%80%E8%A7%88"):
                 cell = re.sub(r"(^图)*\s+", " ", cell.get_text()).strip()
             cells.append(cell)
         name = cells[0]
-        if name not in map_title_to_info:
-            map_title_to_info[name] = {"basic": {}, "detail": {}}
+        if name not in results:
+            results[name] = {"basic": {}, "detail": {}}
         for header, cell in zip(headers, cells):
-            map_title_to_info[name]["basic"][header] = cell
+            results[name]["basic"][header] = cell
         link = row.find("a")
         if link:
             detail = parse_food(link["href"])
-            map_title_to_info[name]["detail"] = detail
-        print(map_title_to_info[name])
-    return map_title_to_info
+            results[name]["detail"] = detail
+        print(name, results[name])
+    return results
 
 
 def parse_food(route):
@@ -520,24 +518,24 @@ def parse_food(route):
 def parse_material_list(route="/ys/%E6%9D%90%E6%96%99%E5%9B%BE%E9%89%B4"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
-    map_title_to_info = {}
+    results = {}
     materials = soup.find_all('div', class_="ys-iconLarge")
     for material in tqdm(materials):
         try:
             link = material.find("a")
             data = parse_food(link["href"])
             if data:
-                map_title_to_info[link["title"]] = data
-                print(data)
+                results[link["title"]] = data
+                print(link["title"], data)
         except:
             print(traceback.format_exc())
-    return map_title_to_info
+    return results
 
 
 def parse_item_list(route="/ys/%E9%81%93%E5%85%B7%E4%B8%80%E8%A7%88"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
-    map_title_to_info = {}
+    results = {}
     table = soup.find("table", {"id": "CardSelectTr"})
     rows = table.find_all('tr')
     header_row = rows[0]
@@ -552,17 +550,17 @@ def parse_item_list(route="/ys/%E9%81%93%E5%85%B7%E4%B8%80%E8%A7%88"):
                 cell = re.sub(r"(^图)*\s+", " ", cell.get_text()).strip()
             cells.append(cell)
         name = cells[0]
-        if name not in map_title_to_info:
-            map_title_to_info[name] = {"basic": {}, "detail": {}}
+        if name not in results:
+            results[name] = {"basic": {}, "detail": {}}
         for header, cell in zip(headers, cells):
-            map_title_to_info[name]["basic"][header] = cell
+            results[name]["basic"][header] = cell
         link = row.find("a")
         if link:
             detail = parse_food(link["href"])
             if detail:
-                map_title_to_info[name]["detail"] = detail
-        print(map_title_to_info[name])
-    return map_title_to_info
+                results[name]["detail"] = detail
+        print(results[name])
+    return results
 
 
 def parse_furniture(route="/ys/%E6%91%86%E8%AE%BE%E4%B8%80%E8%A7%88"):
@@ -573,7 +571,7 @@ def parse_furniture(route="/ys/%E6%91%86%E8%AE%BE%E4%B8%80%E8%A7%88"):
 def parse_furniture_suite_list(route="/ys/摆设套装一览"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
-    map_title_to_info = {}
+    results = {}
     table = soup.find("table", {"id": "CardSelectTr"})
     rows = table.find_all('tr')
     header_row = rows[0]
@@ -584,17 +582,17 @@ def parse_furniture_suite_list(route="/ys/摆设套装一览"):
             cell = re.sub(r"(^图)*\s+", " ", cell.get_text()).strip()
             cells.append(cell)
         name = cells[0]
-        if name not in map_title_to_info:
-            map_title_to_info[name] = {"basic": {}, "detail": {}}
+        if name not in results:
+            results[name] = {"basic": {}, "detail": {}}
         for header, cell in zip(headers, cells):
-            map_title_to_info[name]["basic"][header] = cell
+            results[name]["basic"][header] = cell
         link = row.find("a")
         if link:
             detail = parse_food(link["href"])
             if detail:
-                map_title_to_info[name]["detail"] = detail
-        print(map_title_to_info[name])
-    return map_title_to_info
+                results[name]["detail"] = detail
+        print(results[name])
+    return results
 
 
 def parse_task_item(route="/ys/%E4%BB%BB%E5%8A%A1%E9%81%93%E5%85%B7%E4%B8%80%E8%A7%88"):
@@ -605,12 +603,12 @@ def parse_task_item(route="/ys/%E4%BB%BB%E5%8A%A1%E9%81%93%E5%85%B7%E4%B8%80%E8%
 def parse_geography_list(route="/ys/%E5%9C%B0%E7%90%86%E5%BF%97"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
-    map_title_to_info = {}
+    results = {}
     for area in soup.find('span', class_="mw-headline").find_next("div").find_all('a'):
         title, href = area["title"], area["href"]
-        map_title_to_info[title] = parse_geography(href)
-        print(map_title_to_info[title])
-    return map_title_to_info
+        results[title] = parse_geography(href)
+        print(results[title])
+    return results
 
 
 def parse_geography(route):
@@ -627,13 +625,13 @@ def parse_geography(route):
 def parse_archon_quest_list(route="/ys/%E9%AD%94%E7%A5%9E%E4%BB%BB%E5%8A%A1"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
-    map_title_to_info = {}
+    results = {}
     for task in soup.find_all("div", class_="taskIcon"):
         info = task.find("a")
         title, href = info["title"], info["href"]
-        map_title_to_info[title] = parse_common_quest(href)
-        print(map_title_to_info[title])
-    return map_title_to_info
+        results[title] = parse_common_quest(href)
+        print(results[title])
+    return results
 
 
 def parse_common_quest(route, level="h2", add_asterisk=True):
@@ -716,19 +714,19 @@ def parse_common_quest(route, level="h2", add_asterisk=True):
 def parse_legend_quest_list(route="/ys/%E4%BC%A0%E8%AF%B4%E4%BB%BB%E5%8A%A1"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
-    map_title_to_info = {}
+    results = {}
     for task in soup.find_all("div", class_="taskIcon"):
         info = task.find("a")
         title, href = info["title"], info["href"]
-        if title not in map_title_to_info and re.search("第.+幕", title):
+        if title not in results and re.search("第.+幕", title):
             try:
                 data = parse_legend_quest(href)
                 if data:
-                    map_title_to_info[title] = data
-                    print(map_title_to_info[title])
+                    results[title] = data
+                    print(results[title])
             except:
                 continue
-    return map_title_to_info
+    return results
 
 
 def parse_legend_quest(route):
@@ -749,16 +747,16 @@ def parse_legend_quest(route):
 def parse_world_quest_list(route="/ys/%E4%B8%96%E7%95%8C%E4%BB%BB%E5%8A%A1"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
-    map_title_to_info = {}
+    results = {}
     tasks = list(soup.find_all("span", class_="home-an1"))
     for task in tqdm(tasks):
         info = task.find("a")
         title, href = info["title"], info["href"]
         data = parse_world_quest(href)
         if data:
-            map_title_to_info[title] = data
-            print(map_title_to_info[title])
-    return map_title_to_info
+            results[title] = data
+            print(results[title])
+    return results
 
 
 def parse_world_quest(route):
@@ -1055,9 +1053,11 @@ def parse_library(route="/ys/%E5%8C%97%E9%99%86%E5%9B%BE%E4%B9%A6%E9%A6%86"):
 
 if __name__ == '__main__':
     # parse main page
-    parse_main_page()
+    # parse_main_page()
 
-    output_dir = "private"
+    output_dir = "biligame_wiki/genshin"
+    os.makedirs(output_dir, exist_ok=True)
+
     output_config = {
         "角色图鉴": {
             "角色一览.json": parse_character_list,
