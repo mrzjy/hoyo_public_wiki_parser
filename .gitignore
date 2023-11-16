@@ -9,6 +9,9 @@ __pycache__/
 # Distribution / packaging
 .Python
 .html
+raw_data*
+*.xml.*
+.cache
 .idea
 build/
 develop-eggs/
