@@ -1059,34 +1059,59 @@ if __name__ == '__main__':
 
     output_dir = "private"
     output_config = {
-        # "characters.json": parse_character_list,
-        # "characters_voice.json": parse_character_voices,
-        # "characters.character_outfits": parse_character_outfits,
-        # "weapons.json": parse_weapon_list,
-        # "relics.json": parse_relic_list,
-        # "npcs.json": parse_npc_list,
-        # "geography.json": parse_geography_list,
-        # "archon_quest.json": parse_archon_quest_list,
-        # "legend_quest.json": parse_legend_quest_list,
-        # "world_quest.json": parse_world_quest_list,
-        # "commission_quest.json": parse_commission_quest_list,
-        # "birthday_emails.json": parse_birthday_email_list,
-        # "food.json": parse_food_list,
-        # "material.json": parse_material_list,
-        # "item.json": parse_item_list,
-        # "furniture_suite.json": parse_furniture_suite_list,
-        # "monster.json": parse_monster_list,
-        # "animal.json": parse_animal_list,
-        # "tcg.json": parse_tcg,
-        # "tcg_cards.json": parse_tcg_card_list,
-        # "argot.json": parse_argot,
-        # "tips.json": parse_tips,
-        # "books.json": parse_book_list,
-        # "achievement.json": parse_achievement_list,
-        "library.json": parse_library,
+        "角色图鉴": {
+            "角色一览.json": parse_character_list,
+            "角色语音.json": parse_character_voices,
+            "角色装扮.json": parse_character_outfits,
+        },
+        "装备图鉴": {
+            "武器一览.json": parse_weapon_list,
+            "圣遗物一览.json": parse_relic_list,
+        },
+        "物品一览": {
+            "食物一览.json": parse_food_list,
+            "材料一览.json": parse_material_list,
+            "道具一览.json": parse_item_list,
+            "摆设套装一览.json": parse_furniture_suite_list,
+        },
+        "七圣召唤": {
+            "七圣召唤.json": parse_tcg,
+            "卡牌一览.json": parse_tcg_card_list,
+        },
+        "生物志": {
+            "怪物一览.json": parse_monster_list,
+            "野生生物一览.json": parse_animal_list,
+            "地理志一览.json": parse_geography_list,
+            "NPC图鉴.json": parse_npc_list,
+        },
+        "书籍一览": {
+            "书籍一览.json": parse_book_list,
+        },
+        "成就一览": {
+            "achievement.json": parse_achievement_list,
+        },
+        "任务": {
+            "魔神任务.json": parse_archon_quest_list,
+            "传说任务.json": parse_legend_quest_list,
+            "世界任务.json": parse_world_quest_list,
+            "委托任务.json": parse_commission_quest_list,
+        },
+        "邮件": {
+            "生日邮件.json": parse_birthday_email_list,
+        },
+        "扩展阅读": {
+            "北陆图书馆.json": parse_library,
+            "过场提示.json": parse_tips,
+            "黑话.json": parse_argot,
+        }
     }
 
-    for filename, parser_func in output_config.items():
-        output = parser_func()
-        with open(os.path.join(output_dir, filename), "w", encoding="utf-8") as f:
-            json.dump(output, f, ensure_ascii=False, indent=4)
+    for dirname, parser_funcs in output_config.items():
+        dirpath = os.path.join(output_dir, dirname)
+        os.makedirs(dirpath, exist_ok=True)
+
+        for filename, parser_func in parser_funcs.items():
+            output = parser_func()
+            filepath = os.path.join(dirpath, filename)
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump(output, f, ensure_ascii=False, indent=4)
