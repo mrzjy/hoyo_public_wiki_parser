@@ -1,1 +1,3 @@
-# hoyo_public_wiki_parser
+# Source
+
+https://www.biligame.com/
