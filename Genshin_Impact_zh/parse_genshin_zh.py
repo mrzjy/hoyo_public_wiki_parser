@@ -1055,7 +1055,7 @@ if __name__ == '__main__':
     # parse main page
     # parse_main_page()
 
-    output_dir = "biligame_wiki/genshin"
+    output_dir = "data"
     os.makedirs(output_dir, exist_ok=True)
 
     output_config = {
