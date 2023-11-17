@@ -43,7 +43,7 @@ data/
 
 ### Steps
 
-All code is in parse_genshin_zh.py
+All code is in parse.py
 
 To run it yourself, you should:
 

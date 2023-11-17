@@ -9,16 +9,16 @@ from bs4 import BeautifulSoup, element
 import urllib.parse
 
 
-data_dir = "D:/data/biligame/starrail"
+cache_dir = "D:/data/biligame/starrail"
 #current_dir = os.getcwd()
-#data_dir = current_dir + "/starrail"
+#cache_dir = current_dir + "/starrail"
 
 
 def load_html_by_route(route, force_update=False):
     try:
         assert not force_update
         filename = "wiki.biligame.com" + route.replace("/", "_") + ".html"
-        with open(os.path.join(data_dir, filename), "r", encoding="utf-8") as f:
+        with open(os.path.join(cache_dir, filename), "r", encoding="utf-8") as f:
             html = f.read()
     except (FileNotFoundError, AssertionError):
         print("filename not found", route)
@@ -33,7 +33,7 @@ def load_html_by_route(route, force_update=False):
 def save_html(page_url, html_content, force_update=False):
     # convert URL into a valid filename
     filename = page_url.replace("http://", "").replace("https://", "").replace("/", "_") + ".html"
-    filepath = os.path.join(data_dir, filename)
+    filepath = os.path.join(cache_dir, filename)
     directory = os.path.dirname(filepath)
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -44,7 +44,7 @@ def save_html(page_url, html_content, force_update=False):
             print(filename, " saved.")
         except OSError:
             filename = urllib.parse.unquote(filename)
-            filepath = os.path.join(data_dir, filename)
+            filepath = os.path.join(cache_dir, filename)
             if not os.path.exists(filepath):
                 with open(filepath, 'w', encoding="utf-8") as f:
                     f.write(html_content)
