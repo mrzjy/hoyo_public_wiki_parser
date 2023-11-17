@@ -30,7 +30,7 @@ def load_html_by_route(route):
 def save_html(page_url, html_content):
     # convert URL into a valid filename
     filename = page_url.replace("http://", "").replace("https://", "").replace("/", "_") + ".html"
-    filepath = os.path.join(output_dir, filename)
+    filepath = os.path.join(data_dir, filename)
     if not os.path.exists(filepath):
         try:
             with open(filepath, 'w', encoding="utf-8") as f:
@@ -38,7 +38,7 @@ def save_html(page_url, html_content):
             print(filename, " saved.")
         except OSError:
             filename = urllib.parse.unquote(filename)
-            filepath = os.path.join(output_dir, filename)
+            filepath = os.path.join(data_dir, filename)
             if not os.path.exists(filepath):
                 with open(filepath, 'w', encoding="utf-8") as f:
                     f.write(html_content)
@@ -798,19 +798,28 @@ def parse_commission_quest_list(route="/ys/%E5%A7%94%E6%89%98%E4%BB%BB%E5%8A%A1"
     return output
 
 
-def parse_birthday_email_list(route="ys/邮件"):
+def parse_birthday_email_list(route="/ys/邮件"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
-    output = []
+    results = []
     table = soup.find("table", {"id": "CardSelectTr"})
     rows = table.find_all('tr')
     header_row = rows[0]
     headers = [header.text.strip() for header in header_row.find_all('th')]
-    output.append(headers)
     for row in rows[1:]:
         cells = [re.sub(r"(^图)*\s+", " ", cell.get_text()).strip() for cell in row.find_all('td')]
-        output.append(cells)
-    return output
+        info = {}
+        for header, cell in zip(headers, cells):
+            if cell:
+                if header == "奖励":
+                    cell = cell.split("【")[0]
+
+                info[header] = cell.strip()
+            else:
+                if header == "发件人" and row["data-param1"]:
+                    info[header] = row["data-param1"]
+        results.append(info)
+    return results
 
 
 def parse_monster_list(route="/ys/%E6%80%AA%E7%89%A9%E4%B8%80%E8%A7%88"):
@@ -1059,51 +1068,51 @@ if __name__ == '__main__':
     os.makedirs(output_dir, exist_ok=True)
 
     output_config = {
-        "角色图鉴": {
-            "角色一览.json": parse_character_list,
-            "角色语音.json": parse_character_voices,
-            "角色装扮.json": parse_character_outfits,
-        },
-        "装备图鉴": {
-            "武器一览.json": parse_weapon_list,
-            "圣遗物一览.json": parse_relic_list,
-        },
-        "物品一览": {
-            "食物一览.json": parse_food_list,
-            "材料一览.json": parse_material_list,
-            "道具一览.json": parse_item_list,
-            "摆设套装一览.json": parse_furniture_suite_list,
-        },
-        "七圣召唤": {
-            "七圣召唤.json": parse_tcg,
-            "卡牌一览.json": parse_tcg_card_list,
-        },
-        "生物志": {
-            "怪物一览.json": parse_monster_list,
-            "野生生物一览.json": parse_animal_list,
-            "地理志一览.json": parse_geography_list,
-            "NPC图鉴.json": parse_npc_list,
-        },
-        "书籍一览": {
-            "书籍一览.json": parse_book_list,
-        },
-        "成就一览": {
-            "成就一览.json": parse_achievement_list,
-        },
-        "任务": {
-            "魔神任务.json": parse_archon_quest_list,
-            "传说任务.json": parse_legend_quest_list,
-            "世界任务.json": parse_world_quest_list,
-            "委托任务.json": parse_commission_quest_list,
-        },
+        # "角色图鉴": {
+        #     "角色一览.json": parse_character_list,
+        #     "角色语音.json": parse_character_voices,
+        #     "角色装扮.json": parse_character_outfits,
+        # },
+        # "装备图鉴": {
+        #     "武器一览.json": parse_weapon_list,
+        #     "圣遗物一览.json": parse_relic_list,
+        # },
+        # "物品一览": {
+        #     "食物一览.json": parse_food_list,
+        #     "材料一览.json": parse_material_list,
+        #     "道具一览.json": parse_item_list,
+        #     "摆设套装一览.json": parse_furniture_suite_list,
+        # },
+        # "七圣召唤": {
+        #     "七圣召唤.json": parse_tcg,
+        #     "卡牌一览.json": parse_tcg_card_list,
+        # },
+        # "生物志": {
+        #     "怪物一览.json": parse_monster_list,
+        #     "野生生物一览.json": parse_animal_list,
+        #     "地理志一览.json": parse_geography_list,
+        #     "NPC图鉴.json": parse_npc_list,
+        # },
+        # "书籍一览": {
+        #     "书籍一览.json": parse_book_list,
+        # },
+        # "成就一览": {
+        #     "成就一览.json": parse_achievement_list,
+        # },
+        # "任务": {
+        #     "魔神任务.json": parse_archon_quest_list,
+        #     "传说任务.json": parse_legend_quest_list,
+        #     "世界任务.json": parse_world_quest_list,
+        #     "委托任务.json": parse_commission_quest_list,
+        # },
         "邮件": {
             "生日邮件.json": parse_birthday_email_list,
         },
-        "扩展阅读": {
-            "北陆图书馆.json": parse_library,
-            "过场提示.json": parse_tips,
-            "黑话.json": parse_argot,
-        }
+        # "扩展阅读": {
+        #     "北陆图书馆.json": parse_library,
+        #     "过场提示.json": parse_tips,
+        #     "黑话.json": parse_argot,
+        # }
     }
 
     for dirname, parser_funcs in output_config.items():
