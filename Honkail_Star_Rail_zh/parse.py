@@ -10,6 +10,8 @@ import urllib.parse
 
 
 data_dir = "D:/data/biligame/starrail"
+#current_dir = os.getcwd()
+#data_dir = current_dir + "/starrail"
 
 
 def load_html_by_route(route, force_update=False):
@@ -32,6 +34,9 @@ def save_html(page_url, html_content, force_update=False):
     # convert URL into a valid filename
     filename = page_url.replace("http://", "").replace("https://", "").replace("/", "_") + ".html"
     filepath = os.path.join(data_dir, filename)
+    directory = os.path.dirname(filepath)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     if not os.path.exists(filepath) or force_update:
         try:
             with open(filepath, 'w', encoding="utf-8") as f:

@@ -10,7 +10,8 @@ import urllib.parse
 
 
 data_dir = "D:/data/biligame/genshin"
-
+#current_dir = os.getcwd()
+#data_dir = current_dir + "/genshin"
 
 def load_html_by_route(route):
     try:
@@ -31,6 +32,9 @@ def save_html(page_url, html_content):
     # convert URL into a valid filename
     filename = page_url.replace("http://", "").replace("https://", "").replace("/", "_") + ".html"
     filepath = os.path.join(data_dir, filename)
+    directory = os.path.dirname(filepath)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     if not os.path.exists(filepath):
         try:
             with open(filepath, 'w', encoding="utf-8") as f:
