@@ -1,8 +1,10 @@
-# Genshin Impact Wiki zh
+# Honkai Star Rail Wiki zh
+
+WIP ...
 
 ### Steps
 
-All code is in parse_genshin_zh.py
+All code is in parse.py
 
 To run it yourself, you should:
 
@@ -14,6 +16,3 @@ python parse.py
 ~~~
 
 3. Obtain the data in data folder
-
-### Known issues
-- There are two sections that have not been parsed yet: 家具 and 任务道具
