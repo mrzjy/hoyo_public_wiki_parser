@@ -160,13 +160,41 @@ def parse_character_info(route):
     return info
 
 
+def parse_character_voice_list(route="/sr/%E8%A7%92%E8%89%B2%E8%AF%AD%E9%9F%B3"):
+    html = load_html_by_route(route)
+    soup = BeautifulSoup(html, 'html.parser')
+    results = {}
+    for character in soup.find_all("div", class_="ping0"):
+        node = character.find("a")
+        if node["title"] in results:
+            continue
+        data = parse_character_voice(node["href"])
+        if data:
+            results[node["title"]] = data
+        print(node["title"], data)
+    return results
+
+
+def parse_character_voice(route):
+    info = {}
+    html = load_html_by_route(route)
+    soup = BeautifulSoup(html, 'html.parser')
+    for table in soup.find_all("table", class_="wikitable")[2:]:
+        rows = table.find_all("tr")
+        title = rows[0].text.strip()
+        content = rows[-1].text.strip()
+        info[title] = content
+    return info
+
+
 if __name__ == '__main__':
     output_dir = "data"
     os.makedirs(output_dir, exist_ok=True)
 
     output_config = {
         "角色图鉴": {
-            "角色一览.json": parse_character_list,
+            # "角色一览.json": parse_character_list,
+            "角色语音.json": parse_character_voice_list,
         }
     }
 
