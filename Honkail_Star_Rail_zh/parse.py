@@ -59,8 +59,10 @@ def parse_table(table):
         table_type = "header_top"
     elif len(table.find_all("th")) == len(table.find_all("td")):
         table_type = "header_cell_equal"
-    elif rows[0].find_all("th") and rows[0].find_all("td"):
+    elif rows[-1].find_all("th") and rows[-1].find_all("td"):
         table_type = "header_left"
+    elif not table.find_all("th") and table.find_all("td"):
+        table_type = "no_header"
     else:
         raise NotImplementedError
 
@@ -76,6 +78,7 @@ def parse_table(table):
                     row_info[header] = cell.find('img')["alt"].split(".")[0]
                 else:
                     row_info[header] = re.sub(r"(^图)*\s+", " ", cell.text).strip()
+            row_info = {k: v for k, v in row_info.items() if k and v}
             info.append(row_info)
     elif table_type == "header_cell_equal":
         info = {}
@@ -88,6 +91,8 @@ def parse_table(table):
     elif table_type == "header_left":
         info = {}
         for tr in table.find_all('tr'):
+            if not tr.find("td"):
+                continue
             headers = []
             for h in tr.find_all('th'):
                 if h.has_attr("style") and "display:none" in h["style"]:
@@ -105,6 +110,8 @@ def parse_table(table):
             if not content or "文件:" in content or content == "'":
                 continue
             info[header] = content
+    elif table_type == "no_header":
+        info = [td.text.strip() for td in table.find_all("td")]
     else:
         raise NotImplementedError
 
@@ -187,14 +194,98 @@ def parse_character_voice(route):
     return info
 
 
+def parse_lightcone_list(route="sr/%E5%85%89%E9%94%A5%E4%B8%80%E8%A7%88"):
+    html = load_html_by_route(route)
+    soup = BeautifulSoup(html, 'html.parser')
+    results = {}
+    table = soup.find("table", {"id": "CardSelectTr"})
+    rows = table.find_all("tr")
+    for row in rows[1:]:
+        node = row.find("a")
+        if node["title"] in results:
+            continue
+        data = parse_lightcone(node["href"])
+        if data:
+            results[node["title"]] = data
+        print(node["title"], data)
+    return results
+
+
+def parse_lightcone(route):
+    info = {}
+    html = load_html_by_route(route)
+    soup = BeautifulSoup(html, 'html.parser')
+    basic_info = soup.find("table", class_="wikitable")
+    info["基础信息"] = parse_table(basic_info)
+    for h2 in soup.find_all("h2"):
+        section = h2.find('span', class_="mw-headline")
+        if not section or "立绘" in section.text:
+            continue
+        title = section["id"].strip()
+        if title in {"光锥故事", "推荐角色"}:
+            wikitable = section.find_next('table', class_='wikitable')
+            if wikitable:
+                info[title] = parse_table(wikitable)
+    info = {k: v for k, v in info.items() if k and v}
+    return info
+
+
+def parse_relic_list(route="/sr/%E9%81%97%E5%99%A8%E7%AD%9B%E9%80%89"):
+    html = load_html_by_route(route)
+    soup = BeautifulSoup(html, 'html.parser')
+    results = {}
+    table = soup.find("table", {"id": "CardSelectTr"})
+    rows = table.find_all("tr")
+    for row in rows[1:]:
+        node = row.find("a")
+        if node["title"] in results:
+            continue
+        data = parse_relic(node["href"])
+        if data:
+            results[node["title"]] = data
+        print(node["title"], data)
+    return results
+
+
+def parse_relic(route):
+    info = {}
+    html = load_html_by_route(route)
+    soup = BeautifulSoup(html, 'html.parser')
+    basic_info = soup.find("table", class_="wikitable")
+    info["基本信息"] = parse_table(basic_info)
+    for h2 in soup.find_all("h2"):
+        section = h2.find('span', class_="mw-headline")
+        if not section or "立绘" in section.text:
+            continue
+        title = section["id"].strip()
+        if title == "遗器来历":
+            info[title] = {}
+            section = section.find_next("div", class_="main-line-wrap")
+            subtitles = [li.text.strip() for li in section.find("ul").find_all("li")]
+            contents = section.find_all("div", class_="resp-tab-content")
+            for t, c in zip(subtitles, contents):
+                info[title][t] = c.text.strip()
+
+        elif title in {"光锥故事", "推荐角色"}:
+            wikitable = section.find_next('table', class_='wikitable')
+            if wikitable:
+                info[title] = parse_table(wikitable)
+    info = {k: v for k, v in info.items() if k and v}
+    return info
+
+
 if __name__ == '__main__':
     output_dir = "data"
     os.makedirs(output_dir, exist_ok=True)
 
     output_config = {
         "角色图鉴": {
-            # "角色一览.json": parse_character_list,
+            "角色一览.json": parse_character_list,
             "角色语音.json": parse_character_voice_list,
+        },
+        "装备图鉴": {
+            "光锥一览.json": parse_lightcone_list,
+            "装备一览.json": parse_relic_list,
         }
     }
 
