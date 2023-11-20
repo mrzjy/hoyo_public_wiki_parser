@@ -9,6 +9,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 .html
+tmp.py
 raw_data*
 *.xml.*
 .cache

@@ -274,6 +274,183 @@ def parse_relic(route):
     return info
 
 
+def parse_trailblaze_mission_list(route="/sr/%E5%BC%80%E6%8B%93%E4%BB%BB%E5%8A%A1"):
+    html = load_html_by_route(route)
+    soup = BeautifulSoup(html, 'html.parser')
+    results = {}
+    for h2 in soup.find_all("h2")[2:]:
+        chapter = h2.text.strip()
+        results[chapter] = {}
+        for node in h2.next_siblings:
+            if node.name == "div" and "drop-down-wrap" in node["class"]:
+                mission = node.find("div", class_="title").text.strip().replace("展开/折叠", "")
+                results[chapter][mission] = {}
+                for subnode in node.find("div", class_="wrap-content").find_all("a"):
+                    title = subnode["title"]
+                    data = parse_mission_page(subnode["href"])
+                    if data:
+                        results[chapter][mission][title] = data
+                        print(data)
+            if node.name == "h2":
+                break
+    return results
+
+
+def parse_mission_page(route):
+    info = {}
+    html = load_html_by_route(route)
+    soup = BeautifulSoup(html, 'html.parser')
+    basic_info = soup.find("table", class_="wikitable")
+    if basic_info:
+        info["基本信息"] = parse_table(basic_info)
+
+    # irrelevant tags:
+    for tag in soup.find_all("div", class_=["resourceLoader", "foldExplain"]):
+        tag.decompose()
+
+    for h2 in soup.find_all("h2"):
+        section = h2.find('span', class_="mw-headline")
+        if not section or "立绘" in section.text:
+            continue
+        title = section["id"].strip()
+        info[title] = []
+        if title == "任务相关":
+            for node in h2.find_next_siblings():
+                if node.text.strip():
+                    if node.name == "h3":
+                        info[title].append(f"={node.text.strip()}=")
+                    elif node.name == "ul":
+                        content = "\n".join([f"- {li}" for li in node.text.strip().split("\n")])
+                        info[title].append(content)
+                    else:
+                        info[title].append(f"{node.text.strip()}")
+            info[title] = "\n".join(info[title])
+        elif title == "剧情内容":
+            # todo: tabber
+            info[title] = parse_common_quest(h2, mode="next_sibling")
+    return info
+
+
+def parse_plot(node):
+    text = ""
+    option_beginnings = node.find_all("div", class_="plotOptions")
+    option_contents = node.find_all("div", class_="content")
+    if len(option_contents) >= len(option_beginnings):
+        for j, (begin, content) in enumerate(zip(option_beginnings, option_contents)):
+            if content.find("div", class_="NM-Container"):
+                sender = content.find("div", class_="SenderName")
+                message = sender.find_next("div").text.strip()
+                content = f"{sender.text.strip()}：{message}\n"
+                text += f"剧情选项{j + 1}：{content}\n"
+            else:
+                content = content.text.strip()
+                text += f"剧情选项{j+1}：{begin.text.strip()}\n{content}\n"
+    elif option_contents:
+        if option_contents[0].find("div", class_="NM-Container"):
+            for j, content in enumerate(option_contents):
+                if content.find("div", class_="NM-Container"):
+                    sender = content.find("div", class_="SenderName")
+                    message = sender.find_next("div").text.strip()
+                    text += f"剧情选项{j + 1}：{sender.text.strip()}：{message}\n"
+        else:
+            for j, option in enumerate(option_beginnings):
+                text += f"剧情选项{j + 1}：{option.text.strip()}"
+            for content in option_contents:
+                text += f"{content}\n"
+    return text
+
+
+def parse_common_quest(node, mode="children"):
+    if not node:
+        return ""
+    text = []
+    if mode == "children":
+        nodes = node.children
+    elif mode == "next_sibling":
+        nodes = node.find_next_siblings()
+    else:
+        raise NotImplementedError
+    for node in nodes:
+        if node.text.strip():
+            if node.name == "h3":
+                text.append(f"={node.text.strip()}=")
+            elif node.name == "ul":
+                text.append(node.text.strip())
+            elif node.name == "dl" and node.find("span", {"style": "color:#f29e38"}):
+                text.append(f"*{node.text.strip()}*")
+            elif node.name == "div" and ("MessageFromMe" in node["class"] or "MessageToMe" in node["class"]):
+                sender = node.find("div", class_="SenderName")
+                message = sender.find_next("div").text.strip()
+                text.append(f"{sender.text.strip()}：{message}\n")
+            elif node.name == "div" and "foldFrame" in node["class"]:
+                content = node.find("div", class_="foldTitle").text.strip()
+                text.append(f"*{content}*")
+                fold_content = node.find("div", class_="foldContent")
+                if not fold_content.find("div", class_="plotFrame"):
+                    text.append(fold_content.text.strip())
+                else:
+                    content = parse_common_quest(fold_content)
+                    if content:
+                        if isinstance(content, list):
+                            content = "\n".join(content)
+                        text.append(content)
+            elif node.name == "div" and "plotFrame" in node["class"]:
+                content = parse_plot(node)
+                if content:
+                    text.append(content.strip())
+            else:
+                text.append(f"{node.text.strip()}")
+    text = "\n".join(text)
+    text = re.sub(" {2,}", " ", text)
+    text = text.replace(" ", "")
+    return text
+
+
+def parse_companion_mission_list(route="/sr/%E5%90%8C%E8%A1%8C%E4%BB%BB%E5%8A%A1"):
+    html = load_html_by_route(route)
+    soup = BeautifulSoup(html, 'html.parser')
+    results = {}
+    for h2 in soup.find_all("h2")[2:]:
+        chapter = h2.text.strip()
+        results[chapter] = {}
+        for node in h2.next_siblings:
+            if node.name == "div" and "drop-down-wrap" in node["class"]:
+                mission = node.find("div", class_="title").text.strip().replace("展开/折叠", "")
+                results[chapter][mission] = {}
+                for subnode in node.find("div", class_="wrap-content").find_all("a"):
+                    title = subnode["title"]
+                    data = parse_companion_mission(subnode["href"])
+                    if data:
+                        results[chapter][mission][title] = data
+                        print(data)
+            if node.name == "h2":
+                break
+    return results
+
+
+def parse_companion_mission(route):
+    info = {}
+    html = load_html_by_route(route)
+    soup = BeautifulSoup(html, 'html.parser')
+    basic_info = soup.find("table", class_="wikitable")
+    if basic_info:
+        info["基本信息"] = parse_table(basic_info)
+
+    # irrelevant tags:
+    for tag in soup.find_all("div", class_=["resourceLoader", "foldExplain"]):
+        tag.decompose()
+
+    for section in soup.find("h2", {"id": "剧情内容"}):
+        try:
+            detail = section.find_next("center").find("a")
+            data = parse_mission_page(detail["href"])
+            if data:
+                info[detail["title"]] = data
+        except:
+            continue
+    return info
+
+
 if __name__ == '__main__':
     output_dir = "data"
     os.makedirs(output_dir, exist_ok=True)
@@ -286,6 +463,10 @@ if __name__ == '__main__':
         "装备图鉴": {
             "光锥一览.json": parse_lightcone_list,
             "装备一览.json": parse_relic_list,
+        },
+        "任务": {
+            "开拓任务.json": parse_trailblaze_mission_list,
+            # "同行任务.json": parse_companion_mission_list,
         }
     }
 
