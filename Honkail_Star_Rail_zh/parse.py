@@ -326,7 +326,6 @@ def parse_mission_page(route):
                         info[title].append(f"{node.text.strip()}")
             info[title] = "\n".join(info[title])
         elif title == "剧情内容":
-            # todo: tabber
             info[title] = parse_common_quest(h2, mode="next_sibling")
     return info
 
@@ -382,6 +381,14 @@ def parse_common_quest(node, mode="children"):
                 sender = node.find("div", class_="SenderName")
                 message = sender.find_next("div").text.strip()
                 text.append(f"{sender.text.strip()}：{message}\n")
+            elif node.name == "div" and "tabber" in node["class"]:
+                tab_title = node.find("div", class_="tabbertab")["title"]
+                content = parse_common_quest(node)
+                if content:
+                    if isinstance(content, list):
+                        content = "\n".join(content)
+                    content = f"剧情分支：{tab_title}\n{content}"
+                    text.append(content)
             elif node.name == "div" and "foldFrame" in node["class"]:
                 content = node.find("div", class_="foldTitle").text.strip()
                 text.append(f"*{content}*")
@@ -413,42 +420,23 @@ def parse_companion_mission_list(route="/sr/%E5%90%8C%E8%A1%8C%E4%BB%BB%E5%8A%A1
     for h2 in soup.find_all("h2")[2:]:
         chapter = h2.text.strip()
         results[chapter] = {}
+        unique_title = set()
         for node in h2.next_siblings:
             if node.name == "div" and "drop-down-wrap" in node["class"]:
                 mission = node.find("div", class_="title").text.strip().replace("展开/折叠", "")
                 results[chapter][mission] = {}
                 for subnode in node.find("div", class_="wrap-content").find_all("a"):
                     title = subnode["title"]
-                    data = parse_companion_mission(subnode["href"])
+                    if title in unique_title:
+                        continue
+                    unique_title.add(title)
+                    data = parse_mission_page(subnode["href"])
                     if data:
                         results[chapter][mission][title] = data
-                        print(data)
+                        print(chapter, mission, data)
             if node.name == "h2":
                 break
     return results
-
-
-def parse_companion_mission(route):
-    info = {}
-    html = load_html_by_route(route)
-    soup = BeautifulSoup(html, 'html.parser')
-    basic_info = soup.find("table", class_="wikitable")
-    if basic_info:
-        info["基本信息"] = parse_table(basic_info)
-
-    # irrelevant tags:
-    for tag in soup.find_all("div", class_=["resourceLoader", "foldExplain"]):
-        tag.decompose()
-
-    for section in soup.find("h2", {"id": "剧情内容"}):
-        try:
-            detail = section.find_next("center").find("a")
-            data = parse_mission_page(detail["href"])
-            if data:
-                info[detail["title"]] = data
-        except:
-            continue
-    return info
 
 
 if __name__ == '__main__':
@@ -466,7 +454,7 @@ if __name__ == '__main__':
         },
         "任务": {
             "开拓任务.json": parse_trailblaze_mission_list,
-            # "同行任务.json": parse_companion_mission_list,
+            "同行任务.json": parse_companion_mission_list,
         }
     }
 
