@@ -1,6 +1,11 @@
 # Honkai Star Rail Wiki zh
 
-WIP ...
+### Requirements
+
+~~~
+Python 3.8+
+Selenium + chromedriver (only needed for 短信.json)
+~~~
 
 ### Steps
 

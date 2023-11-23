@@ -1,17 +1,17 @@
 import json
 import os
 import re
+import time
 import traceback
 
 from tqdm import tqdm
 import requests
-from bs4 import BeautifulSoup, element
+from bs4 import BeautifulSoup
 import urllib.parse
 
 
 cache_dir = "D:/data/biligame/starrail"
-#current_dir = os.getcwd()
-#cache_dir = current_dir + "/starrail"
+chromedriver_path="D:/tools/chromedriver-win64/chromedriver.exe"
 
 
 def load_html_by_route(route, force_update=False):
@@ -330,10 +330,14 @@ def parse_mission_page(route):
     return info
 
 
-def parse_plot(node):
+def parse_plot(node, is_mailFrame=False):
     text = ""
-    option_beginnings = node.find_all("div", class_="plotOptions")
-    option_contents = node.find_all("div", class_="content")
+    if is_mailFrame:
+        option_beginnings = node.find_all("div", class_="mailOptions")
+        option_contents = node.find_all("div", class_="messageContent")
+    else:
+        option_beginnings = node.find_all("div", class_="plotOptions")
+        option_contents = node.find_all("div", class_="content")
     if len(option_contents) >= len(option_beginnings):
         for j, (begin, content) in enumerate(zip(option_beginnings, option_contents)):
             if content.find("div", class_="NM-Container"):
@@ -379,8 +383,15 @@ def parse_common_quest(node, mode="children"):
                 text.append(f"*{node.text.strip()}*")
             elif node.name == "div" and ("MessageFromMe" in node["class"] or "MessageToMe" in node["class"]):
                 sender = node.find("div", class_="SenderName")
-                message = sender.find_next("div").text.strip()
-                text.append(f"{sender.text.strip()}：{message}\n")
+                message = sender.find_next("div")
+                if message.text.strip():
+                    text.append(f"{sender.text.strip()}：{message.text.strip()}")
+                elif "EmotionLeft" in message["class"] or "EmotionRight" in message["class"]:
+                    img = message.find("img")
+                    text.append(f"{sender.text.strip()}：[{img['alt']}]({img['src']})")
+                elif "PictureLeft" in message["class"] or "PictureRight" in message["class"]:
+                    img = message.find("img")
+                    text.append(f"{sender.text.strip()}：[{img['alt']}]({img['src']})")
             elif node.name == "div" and "tabber" in node["class"]:
                 tab_title = node.find("div", class_="tabbertab")["title"]
                 content = parse_common_quest(node)
@@ -405,12 +416,22 @@ def parse_common_quest(node, mode="children"):
                 content = parse_plot(node)
                 if content:
                     text.append(content.strip())
+            elif node.name == "div" and "MessageHeader" in node["class"]:
+                signature = node.find("small")
+                sig = signature.text.strip()
+                signature.decompose()
+                name = node.text.strip()
+                text.append(f"{name}[签名：{sig}]")
+            elif node.name == "div" and "mailFrame" in node["class"]:
+                content = parse_plot(node, is_mailFrame=True)
+                if content:
+                    text.append(content.strip())
             else:
                 text.append(f"{node.text.strip()}")
-    text = "\n".join(text)
+    text = "\n".join([l for l in text if "MediaWiki" not in l])
     text = re.sub(" {2,}", " ", text)
     text = text.replace(" ", "")
-    return text
+    return text.strip()
 
 
 def parse_companion_quest_list(route="/sr/%E5%90%8C%E8%A1%8C%E4%BB%BB%E5%8A%A1"):
@@ -505,6 +526,66 @@ def parse_book(route):
     return info
 
 
+def parse_messages(
+    url="https://wiki.biligame.com/sr/%E7%9F%AD%E4%BF%A1",
+):
+    """message page uses javascript, so we apply selenium to crawl"""
+    try:
+        from selenium import webdriver
+        from selenium.webdriver.chrome.service import Service
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.common.action_chains import ActionChains
+
+        options = webdriver.ChromeOptions()
+        options.headless = True
+        service = Service(executable_path=chromedriver_path)
+        driver = webdriver.Chrome(service=service, options=options)
+        actions = ActionChains(driver)
+    except:
+        print(traceback.format_exc())
+        return {}
+
+    driver.get(url)
+    driver.implicitly_wait(10)
+    org_section = driver.find_element(By.CSS_SELECTOR, "ul.resp-tabs-list")
+    results = {}
+    for k, org in enumerate(org_section.find_elements(By.CSS_SELECTOR, "li")):
+        # choose org
+        organization_name = org.text.strip()
+        results[organization_name] = {}
+        actions.move_to_element(org).perform()
+        # driver.execute_script("arguments[0].scrollIntoView(true);", org)
+        org.click()
+        time.sleep(1)
+        # choose message character
+        character_section = driver.find_elements(By.CSS_SELECTOR, "ul.Messages-resp-tabs-list")[k]
+        for c in character_section.find_elements(By.CSS_SELECTOR, "li"):
+            character = c.text.strip()
+            results[organization_name][character] = {}
+            actions.move_to_element(c).perform()
+            c.click()
+            time.sleep(1)
+            title_section = driver.find_element(By.CSS_SELECTOR, "div.title-content")
+            titles = title_section.find_elements(By.CSS_SELECTOR, "li.bili-list-style")
+            for i in range(len(titles)):
+                title_section = driver.find_element(By.CSS_SELECTOR, "div.title-content")
+                t = title_section.find_elements(By.CSS_SELECTOR, "li.bili-list-style")[i]
+                actions.move_to_element(t).perform()
+                t.click()
+                time.sleep(0.1)
+                title = t.text.strip()
+                results[organization_name][character][title] = {}
+                html = driver.find_elements(By.CSS_SELECTOR, "div.CodeContainer")[i].get_attribute('outerHTML')
+                soup = BeautifulSoup(html, 'html.parser')
+                data = parse_common_quest(soup.find("div", class_="CodeContainer"))
+                if data:
+                    results[organization_name][character][title] = data
+                    print(organization_name, character, title, data)
+
+    driver.quit()
+    return results
+
+
 if __name__ == '__main__':
     output_dir = "data"
     os.makedirs(output_dir, exist_ok=True)
@@ -528,6 +609,9 @@ if __name__ == '__main__':
         },
         "书籍一览": {
             "书籍.json": parse_book_list,
+        },
+        "短信一览": {
+            "短信.json": parse_messages
         }
     }
 
