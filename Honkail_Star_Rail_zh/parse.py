@@ -274,7 +274,7 @@ def parse_relic(route):
     return info
 
 
-def parse_trailblaze_mission_list(route="/sr/%E5%BC%80%E6%8B%93%E4%BB%BB%E5%8A%A1"):
+def parse_trailblaze_quest_list(route="/sr/%E5%BC%80%E6%8B%93%E4%BB%BB%E5%8A%A1"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
     results = {}
@@ -413,7 +413,7 @@ def parse_common_quest(node, mode="children"):
     return text
 
 
-def parse_companion_mission_list(route="/sr/%E5%90%8C%E8%A1%8C%E4%BB%BB%E5%8A%A1"):
+def parse_companion_quest_list(route="/sr/%E5%90%8C%E8%A1%8C%E4%BB%BB%E5%8A%A1"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
     results = {}
@@ -439,6 +439,40 @@ def parse_companion_mission_list(route="/sr/%E5%90%8C%E8%A1%8C%E4%BB%BB%E5%8A%A1
     return results
 
 
+def parse_adventure_quest_list(route="/sr/%E5%86%92%E9%99%A9%E4%BB%BB%E5%8A%A1"):
+    html = load_html_by_route(route)
+    soup = BeautifulSoup(html, 'html.parser')
+    results = {}
+    for h2 in soup.find_all("h2")[2:]:
+        title = h2.text.strip()
+        results[title] = {}
+        for h in h2.find_all_next(["h3", "h2"]):
+            if h.name == "h2":
+                break
+            subtitle = h.text.strip()
+            results[title][subtitle] = {}
+            for li in h.find_next("ul").find_all("li"):
+                node = li.find("a")
+                name = node["title"]
+                data = parse_mission_page(node["href"])
+                if data:
+                    results[title][subtitle][name] = data
+                    print(title, subtitle, data)
+    return results
+
+
+def parse_daily_quest_list(route="/sr/%E6%97%A5%E5%B8%B8%E4%BB%BB%E5%8A%A1"):
+    return parse_adventure_quest_list(route)
+
+
+def parse_event_quest_list(route="/sr/%E6%B4%BB%E5%8A%A8%E4%BB%BB%E5%8A%A1"):
+    return parse_trailblaze_quest_list(route)
+
+
+def parse_interaction_event_list(route="/sr/%E4%BA%A4%E4%BA%92%E4%BA%8B%E4%BB%B6"):
+    return parse_adventure_quest_list(route)
+
+
 if __name__ == '__main__':
     output_dir = "data"
     os.makedirs(output_dir, exist_ok=True)
@@ -453,8 +487,12 @@ if __name__ == '__main__':
             "装备一览.json": parse_relic_list,
         },
         "任务": {
-            "开拓任务.json": parse_trailblaze_mission_list,
-            "同行任务.json": parse_companion_mission_list,
+            "开拓任务.json": parse_trailblaze_quest_list,
+            "同行任务.json": parse_companion_quest_list,
+            "冒险任务.json": parse_adventure_quest_list,
+            "日常任务.json": parse_daily_quest_list,
+            "活动任务.json": parse_event_quest_list,
+            "交互事件.json": parse_interaction_event_list,
         }
     }
 
