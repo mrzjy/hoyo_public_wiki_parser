@@ -473,26 +473,61 @@ def parse_interaction_event_list(route="/sr/%E4%BA%A4%E4%BA%92%E4%BA%8B%E4%BB%B6
     return parse_adventure_quest_list(route)
 
 
+def parse_book_list(route="/sr/%E4%B9%A6%E6%9E%B6"):
+    html = load_html_by_route(route)
+    soup = BeautifulSoup(html, 'html.parser')
+    results = {}
+    books = soup.find("div", {"id": "CardSelectTr"})
+    for book in tqdm(books.find_all("div", class_="book-image")):
+        node = book.find("a")
+        title = node["title"]
+        data = parse_book(node["href"])
+        if data:
+            results[title] = data
+    return results
+
+
+def parse_book(route):
+    html = load_html_by_route(route)
+    soup = BeautifulSoup(html, 'html.parser')
+    info = {}
+    quote = soup.find("blockquote")
+    if quote:
+        info["引用"] = quote.text.strip()
+
+    for row in soup.find_all("div", class_="row"):
+        h2 = row.find("h2")
+        if not h2:
+            continue
+        title = h2.text.strip()
+        h2.decompose()
+        info[title] = row.text.strip().replace(" ", "")
+    return info
+
+
 if __name__ == '__main__':
     output_dir = "data"
     os.makedirs(output_dir, exist_ok=True)
 
     output_config = {
-        "角色图鉴": {
-            "角色一览.json": parse_character_list,
-            "角色语音.json": parse_character_voice_list,
-        },
-        "装备图鉴": {
-            "光锥一览.json": parse_lightcone_list,
-            "装备一览.json": parse_relic_list,
-        },
-        "任务": {
-            "开拓任务.json": parse_trailblaze_quest_list,
-            "同行任务.json": parse_companion_quest_list,
-            "冒险任务.json": parse_adventure_quest_list,
-            "日常任务.json": parse_daily_quest_list,
-            "活动任务.json": parse_event_quest_list,
-            "交互事件.json": parse_interaction_event_list,
+        # "角色图鉴": {
+        #     "角色一览.json": parse_character_list,
+        #     "角色语音.json": parse_character_voice_list,
+        # },
+        # "装备图鉴": {
+        #     "光锥一览.json": parse_lightcone_list,
+        #     "装备一览.json": parse_relic_list,
+        # },
+        # "任务": {
+        #     "开拓任务.json": parse_trailblaze_quest_list,
+        #     "同行任务.json": parse_companion_quest_list,
+        #     "冒险任务.json": parse_adventure_quest_list,
+        #     "日常任务.json": parse_daily_quest_list,
+        #     "活动任务.json": parse_event_quest_list,
+        #     "交互事件.json": parse_interaction_event_list,
+        # },
+        "书籍一览": {
+            "书籍.json": parse_book_list,
         }
     }
 
