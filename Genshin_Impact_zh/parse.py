@@ -10,8 +10,6 @@ import urllib.parse
 
 
 cache_dir = "D:/data/biligame/genshin"
-#current_dir = os.getcwd()
-#cache_dir = current_dir + "/genshin"
 
 
 def load_html_by_route(route):
@@ -77,6 +75,85 @@ def parse_main_page(route="/ys/%E9%A6%96%E9%A1%B5"):
                         continue
 
 
+def parse_table(table):
+    rows = table.find_all('tr')
+    if len(rows[0].find_all("th")) > 1 and not rows[0].find_all("td"):
+        table_type = "header_top"
+    elif len(table.find_all("th")) == len(table.find_all("td")):
+        table_type = "header_cell_equal"
+    elif rows[-1].find_all("th") and rows[-1].find_all("td"):
+        table_type = "header_left"
+    elif not table.find_all("th") and table.find_all("td"):
+        table_type = "no_header"
+    else:
+        table_type = "free"
+
+    if table_type == "header_top":
+        headers = [header.text.strip() for header in rows[0].find_all('th')]
+        info = []
+        for row in rows[1:]:
+            row_info = {}
+            for header, cell in zip(headers, row.find_all('td')):
+                if not header:
+                    continue
+                if header == "稀有度":
+                    row_info[header] = cell.find('img')["alt"].split(".")[0]
+                else:
+                    row_info[header] = re.sub(r"(^图)*\s+", " ", cell.text).strip()
+            row_info = {k: v for k, v in row_info.items() if k and v}
+            info.append(row_info)
+    elif table_type == "header_cell_equal":
+        info = {}
+        for header, cell in zip(table.find_all("th"), table.find_all("td")):
+            header = header.text.strip()
+            if header == "稀有度":
+                info[header] = cell.find('img')["alt"].split(".")[0]
+            else:
+                info[header] = re.sub(r"(^图)*\s+", " ", cell.text).strip()
+    elif table_type == "header_left":
+        info = {}
+        for tr in table.find_all('tr'):
+            if not tr.find("td"):
+                continue
+            headers = []
+            for h in tr.find_all('th'):
+                if h.has_attr("style") and "display:none" in h["style"]:
+                    continue
+                header = h.text.split("Media")[0].strip()
+                headers.append(header)
+            if not headers:
+                continue
+            header = " - ".join([h for h in headers if h])
+
+            if header == "稀有度":
+                content = tr.find('img')["alt"].split(".")[0]
+            else:
+                content = tr.find("td").text.strip().replace("\xa0", " ")
+            if not content or "文件:" in content or content == "'":
+                continue
+            info[header] = content
+    elif table_type == "no_header":
+        info = [td.text.strip() for td in table.find_all("td")]
+    else:  # freeform
+        info = []
+        for row in rows:
+            line = ""
+            nodes = row.find_all(["th", "td"])
+            for k, n in enumerate(nodes):
+                if k and n.name == "td" and nodes[k-1].name == "th":
+                    line += ": "
+                content = n.text.replace('\xa0', '')
+                content = re.sub("文件:.+\.(jpg|gif|png)", "", content)
+                line += f"{content.strip()} "
+            info.append(line.strip())
+
+    if isinstance(info, dict):
+        info = {k: v for k, v in info.items() if k and v}
+    elif isinstance(info, list):
+        info = [l for l in info if l]
+    return info
+
+
 def parse_character_list(route="/ys/%E8%A7%92%E8%89%B2"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
@@ -134,42 +211,7 @@ def parse_character_info(route):
 
         wikitable = section.find_next('table', class_='wikitable')
         if wikitable:
-            if title in {"属性数据", "命之座", "技能升级材料"}:
-                data = []
-                rows = wikitable.find_all('tr')
-                header_row = rows[0]
-                headers = [header.text.strip() for header in header_row.find_all('th')]
-                data.append(headers)
-                for row in rows[1:]:
-                    cells = [re.sub(r"(^图)*\s+", " ", cell.get_text()) for cell in row.find_all('td')]
-                    data.append(cells)
-                info[title] = data
-            elif title == "突破":
-                data = []
-                for row in wikitable.find_all('tr'):
-                    th = row.find('th')
-                    if th:
-                        data.append(re.sub(r"\s+", " ", th.get_text()).strip())
-                    else:
-                        row_data = []
-                        for cell in row.find_all('td'):
-                            row_data.append(re.sub(r"\s+", " ", cell.get_text()).strip())
-                        data.append(row_data)
-                info[title] = data
-            elif title == "角色故事":
-                for th in wikitable.find_all('th'):
-                    td = th.find_next('td')
-                    if th and td:
-                        info[title][th.text.strip()] = re.sub(r"(^图)*\s+", " ", td.text).strip()
-            else:
-                for tr in wikitable.find_all('tr'):
-                    th = tr.find('th')
-                    td = tr.find('td')
-                    if th and th.text.strip() == "稀有度":
-                        info[title][th.text.strip()] = td.find('img')["alt"].split(".")[0]
-                    else:
-                        if th and td:
-                            info[title][th.text.strip()] = re.sub(r"(^图)*\s+", " ", td.text).strip()
+            info[title] = parse_table(wikitable)
     for key, item in info.items():
         if not item:
             print(f"warning: {key} field is empty", info)
@@ -770,12 +812,7 @@ def parse_world_quest(route):
     info = {}
     table = soup.find("table", class_="wikitable")
     if table:
-        info["信息"] = {}
-        for tr in table.find_all("tr"):
-            th = tr.find("th").text.strip()
-            td = tr.find("td").text.strip()
-            if td:
-                info["信息"][th] = td.replace("\xa0", "")
+        info["信息"] = parse_table(table)
 
     story = parse_common_quest(route)
     if story:
