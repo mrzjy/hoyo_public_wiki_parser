@@ -393,13 +393,14 @@ def parse_common_quest(node, mode="children"):
                     img = message.find("img")
                     text.append(f"{sender.text.strip()}：[{img['alt']}]({img['src']})")
             elif node.name == "div" and "tabber" in node["class"]:
-                tab_title = node.find("div", class_="tabbertab")["title"]
-                content = parse_common_quest(node)
-                if content:
-                    if isinstance(content, list):
-                        content = "\n".join(content)
-                    content = f"剧情分支：{tab_title}\n{content}"
-                    text.append(content)
+                for m, tab in enumerate(node.find_all("div", class_="tabbertab")):
+                    tab_title = tab["title"]
+                    content = parse_common_quest(tab)
+                    if content:
+                        if isinstance(content, list):
+                            content = "\n".join(content)
+                        content = f"剧情分支{m+1}：{tab_title}\n{content}"
+                        text.append(content)
             elif node.name == "div" and "foldFrame" in node["class"]:
                 content = node.find("div", class_="foldTitle").text.strip()
                 text.append(f"*{content}*")
@@ -591,14 +592,14 @@ if __name__ == '__main__':
     os.makedirs(output_dir, exist_ok=True)
 
     output_config = {
-        "角色图鉴": {
-            "角色一览.json": parse_character_list,
-            "角色语音.json": parse_character_voice_list,
-        },
-        "装备图鉴": {
-            "光锥一览.json": parse_lightcone_list,
-            "装备一览.json": parse_relic_list,
-        },
+        # "角色图鉴": {
+        #     "角色一览.json": parse_character_list,
+        #     "角色语音.json": parse_character_voice_list,
+        # },
+        # "装备图鉴": {
+        #     "光锥一览.json": parse_lightcone_list,
+        #     "装备一览.json": parse_relic_list,
+        # },
         "任务": {
             "开拓任务.json": parse_trailblaze_quest_list,
             "同行任务.json": parse_companion_quest_list,
@@ -607,12 +608,12 @@ if __name__ == '__main__':
             "活动任务.json": parse_event_quest_list,
             "交互事件.json": parse_interaction_event_list,
         },
-        "书籍一览": {
-            "书籍.json": parse_book_list,
-        },
-        "短信一览": {
-            "短信.json": parse_messages
-        }
+        # "书籍一览": {
+        #     "书籍.json": parse_book_list,
+        # },
+        # "短信一览": {
+        #     "短信.json": parse_messages
+        # }
     }
 
     for dirname, parser_funcs in output_config.items():

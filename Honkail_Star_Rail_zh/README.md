@@ -21,3 +21,7 @@ python parse.py
 ~~~
 
 3. Obtain the data in data folder
+
+### Known Issues
+
+- There are pages with nested plotFrames that are complex to parse (e.g., 冒险任务.json, 致：黯淡星)
