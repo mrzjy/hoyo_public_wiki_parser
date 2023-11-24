@@ -681,81 +681,84 @@ def parse_archon_quest_list(route="/ys/%E9%AD%94%E7%A5%9E%E4%BB%BB%E5%8A%A1"):
     return results
 
 
-def parse_common_quest(route, level="h2", add_asterisk=True):
-    def parse_plot(sibling):
-        text = ""
-        option_beginnings = sibling.find_all("div", class_="plotOptions")
-        option_contents = sibling.find_all("div", class_="content")
-        if len(option_contents) >= len(option_beginnings):
-            for j, (begin, contents) in enumerate(zip(option_beginnings, option_contents)):
-                text += f"剧情选项{j+1}：{begin.text.strip()}\n{contents.text.strip()}\n"
-        else:
-            for j, option in enumerate(option_beginnings):
-                text += f"剧情选项{j+1}：{option.text.strip()}"
-            for content in option_contents:
-                text += f"{content}\n"
-        return text
+def parse_plot(sibling):
+    text = ""
+    option_beginnings = sibling.find_all("div", class_="plotOptions")
+    option_contents = sibling.find_all("div", class_="content")
+    if len(option_contents) >= len(option_beginnings):
+        for j, (begin, contents) in enumerate(zip(option_beginnings, option_contents)):
+            text += f"剧情选项{j+1}：{begin.text.strip()}\n{contents.text.strip()}\n"
+    else:
+        for j, option in enumerate(option_beginnings):
+            text += f"剧情选项{j+1}：{option.text.strip()}"
+        for content in option_contents:
+            text += f"{content}\n"
+    return text
 
+
+def parse_common_quest(route, level="h2", add_asterisk=True):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
-    quest = []
-    for h2 in soup.find('div', id="mw-content-text").find_all(level)[1:]:
-        quest.append(h2.text)
-        for sibling in h2.find_next_siblings():
-            if sibling.name == "div":
-                text = ""
-                try:
-                    assert re.search("(plotFrame|plotBox|foldFrame|tabbertab)", sibling["class"])
-                    if sibling.name == "div" and re.search("(plotFrame|plotBox)", sibling["class"]):
-                        text += parse_plot(sibling) + "\n"
-                    else:
-                        for child in sibling.findChildren(recursive=False):
-                            if child.name == "div" and re.search("(plotFrame|plotBox)", sibling["class"]):
-                                text += parse_plot(child) + "\n"
-                            else:
-                                for sub_sibling in child.contents:
-                                    try:
-                                        if sub_sibling.name == "div" and (
-                                                "plotFrame" in sub_sibling["class"] or "plotBox" in sub_sibling[
-                                            "class"]):
-                                            text += parse_plot(sub_sibling) + "\n"
-                                        elif sub_sibling.name == "div" and "foldExplain" in sub_sibling["class"]:
-                                            continue
-                                        else:
-                                            text += sub_sibling.text.strip() + "\n"
-                                    except:
-                                        continue
-                except:
-                    text = sibling.text.strip()
-            elif sibling.name == "div" and "foldExplain" in sibling["class"]:
-                continue
-            elif sibling.name == "h2":
-                text = f"\n={sibling.text.strip()}="
-            elif sibling.name == "h3" or sibling.name == "blockquote" or "color:#b18300" in sibling.prettify():
-                text = ""
-                for line in sibling.text.split("\n"):
-                    if line.strip():
-                        if add_asterisk:
-                            text += f"*{line.strip()}*\n"
-                        else:
-                            text += f"{line.strip()}\n"
-                text = text.strip()
-            else:
-                text = sibling.text.strip()
+    quest = {}
 
-            if re.search("(相关攻略|参考链接|原神WIKI导航)", text):
+    for head in soup.find('div', id="mw-content-text").find_all(level):
+        if not head.find("span"):
+            continue
+
+        title = head.text.strip()
+        quest[title] = []
+        for node in head.find_next_siblings():
+            if node.name == level:
                 break
-            if re.search("(请上传文件|www\.|文件:|https:|max-width|toclevel)", text):
-                continue
-            if text and "Media" not in text:
-                quest.append(text)
-    quest = "\n".join(quest)
-    quest = re.sub("(分支对话|动画剧情)", "", quest)
-    quest = re.sub("\n+", "\n", quest)
-    quest = re.sub(" ", "", quest)
-    quest = quest.replace("\xa0", "")
-    quest = re.sub("请上传文件.+", "", quest)
+            content = parse_node(node, add_asterisk)
+            if content:
+                quest[title].append(content)
+
+        quest[title] = "\n".join(quest[title])
+        quest[title] = re.sub("(分支对话|动画剧情)", "", quest[title])
+        quest[title] = re.sub("\n+", "\n", quest[title])
+        quest[title] = re.sub(" ", "", quest[title])
+        quest[title] = quest[title].replace("\xa0", "")
+        quest[title] = re.sub("请上传文件.+", "", quest[title])
     return quest
+
+
+def parse_node(node, add_asterisk=False):
+    text = ""
+    # todo: tabbertab
+    if node.name == "div" and not node.has_attr("class"):
+        text = node.text.strip()
+    elif node.name == "div" and "tabbertab" in node["class"]:
+        print()
+
+    elif node.name == "div" and re.search("(plotFrame|plotBox|foldFrame)", str(node["class"])):
+        if len(node.find_all("div", "plotBox")) <= 1:
+            text = parse_plot(node)
+        else:
+            for child in node.findChildren(recursive=False):
+                content = parse_node(child)
+                text += content.strip() + "\n"
+    elif node.name == "div" and "foldExplain" in node["class"]:
+        return ""
+    elif node.name == "h2":
+        return f"\n={node.text.strip()}="
+    elif node.name == "h3" or node.name == "blockquote" or "color:#b18300" in node.prettify():
+        text = ""
+        for line in node.text.split("\n"):
+            if line.strip():
+                if add_asterisk:
+                    text += f"*{line.strip()}*\n"
+                else:
+                    text += f"{line.strip()}\n"
+        text = text.strip()
+    else:
+        text = node.text.strip()
+
+    if re.search("(相关攻略|参考链接|原神WIKI导航)", text):
+        return ""
+    if re.search("(请上传文件|www\.|文件:|https:|max-width|toclevel|Media)", text):
+        return ""
+    return text
 
 
 def parse_legend_quest_list(route="/ys/%E4%BC%A0%E8%AF%B4%E4%BB%BB%E5%8A%A1"):
@@ -1091,14 +1094,11 @@ def parse_library(route="/ys/%E5%8C%97%E9%99%86%E5%9B%BE%E4%B9%A6%E9%A6%86"):
             if "index.php" in href:
                 continue
             data = parse_common_quest(href, add_asterisk=False)
-            if data:
-                results[menu_str][sub_menu_str] = re.sub("\[\d+]", "", data)
-                print(results[menu_str][sub_menu_str])
-            else:
+            if not data:
                 data = parse_common_quest(sub_menu.find("a")["href"], level="h3", add_asterisk=False)
-                if data:
-                    results[menu_str][sub_menu_str] = re.sub("\[\d+]", "", data)
-                    print(results[menu_str][sub_menu_str])
+            if data:
+                results[menu_str][sub_menu_str] = data
+                print(results[menu_str][sub_menu_str])
     return results
 
 
