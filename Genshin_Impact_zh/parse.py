@@ -619,11 +619,6 @@ def parse_item_list(route="/ys/%E9%81%93%E5%85%B7%E4%B8%80%E8%A7%88"):
     return results
 
 
-def parse_furniture(route="/ys/%E6%91%86%E8%AE%BE%E4%B8%80%E8%A7%88"):
-    # todo
-    pass
-
-
 def parse_furniture_suite_list(route="/ys/摆设套装一览"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
@@ -1156,6 +1151,66 @@ def parse_quest_item(url="https://wiki.biligame.com/ys/%E4%BB%BB%E5%8A%A1%E9%81%
     return results
 
 
+def parse_furniture(url="https://wiki.biligame.com/ys/%E6%91%86%E8%AE%BE%E4%B8%80%E8%A7%88"):
+    try:
+        from selenium import webdriver
+        from selenium.webdriver.chrome.service import Service
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.common.action_chains import ActionChains
+
+        options = webdriver.ChromeOptions()
+        options.headless = True
+        service = Service(executable_path=chromedriver_path)
+        driver = webdriver.Chrome(service=service, options=options)
+        actions = ActionChains(driver)
+    except:
+        print(traceback.format_exc())
+        return {}
+
+    driver.get(url)
+    time.sleep(3)
+    query = driver.find_element(By.CSS_SELECTOR, "span#queryDataBtn")
+    actions.move_to_element(query).perform()
+    query.click()
+    time.sleep(5)
+
+    pages = driver.find_element(By.CSS_SELECTOR, "ul.pagination")
+    results = {}
+    rows = []
+    page_buttons = pages.find_elements(By.CSS_SELECTOR, "li")[1:-1]
+    for i, c in enumerate(page_buttons):
+        pages = driver.find_element(By.CSS_SELECTOR, "ul.pagination")
+        c = pages.find_elements(By.CSS_SELECTOR, "li")[1:-1][i]
+        page_button = c.find_element(By.CSS_SELECTOR, "a")
+        actions.move_to_element(page_button).perform()
+        page_button.click()
+        time.sleep(3)
+        html = driver.find_element(By.CSS_SELECTOR, "div#queryDataGrid").get_attribute("outerHTML")
+        soup = BeautifulSoup(html, 'html.parser')
+        found_rows = soup.find("table").find_all("tr")[1:]
+        print(f"found {len(found_rows)} items")
+        rows.extend(found_rows)
+    for tr in tqdm(rows):
+        a = tr.find_all("td")[1].find("a")
+        title, href = a["title"], a["href"]
+        if "index.php" in href:
+            continue
+        results[title] = {}
+        html = load_html_by_route(href)
+        soup = BeautifulSoup(html, 'html.parser')
+        for h2 in soup.find_all("h2")[1:]:
+            subtitle = h2.text.strip()
+            if not subtitle.strip():
+                continue
+            table = h2.find_next("table")
+            if table:
+                info = parse_table(table, keys_to_delete="同类素材")
+                if info:
+                    results[title][subtitle] = info
+        print(title, results[title])
+    return results
+
+
 if __name__ == '__main__':
     # parse main page
     # parse_main_page()
@@ -1177,6 +1232,7 @@ if __name__ == '__main__':
             "食物一览.json": parse_food_list,
             "材料一览.json": parse_material_list,
             "道具一览.json": parse_item_list,
+            "摆设一览.json": parse_furniture,
             "摆设套装一览.json": parse_furniture_suite_list,
         },
         "七圣召唤": {

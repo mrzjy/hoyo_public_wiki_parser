@@ -4,7 +4,7 @@
 
 ~~~
 Python 3.8+
-Selenium + chromedriver (only needed for 任务道具.json and 家具.json)
+Selenium + chromedriver (only needed for 任务道具.json and 摆设一览.json)
 ~~~
 
 ### Data structure
@@ -30,6 +30,7 @@ data/
 │   ├── 过场提示.json
 │   └── 黑话.json
 ├── 物品一览
+│   ├── 摆设一览.json
 │   ├── 摆设套装一览.json
 │   ├── 材料一览.json
 │   ├── 道具一览.json
@@ -64,6 +65,3 @@ python parse.py
 ~~~
 
 3. Obtain the data in data folder
-
-### Known issues
-- There are 1 section that has not been parsed yet: 家具
