@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import time
 import traceback
 
 from tqdm import tqdm
@@ -10,9 +11,11 @@ import urllib.parse
 
 
 cache_dir = "D:/data/biligame/genshin"
+chromedriver_path = "D:/tools/chromedriver-win64/chromedriver.exe"
 
 
 def load_html_by_route(route):
+    route = re.sub("https://wiki.biligame.com", "", route)
     try:
         filename = "wiki.biligame.com" + route.replace("/", "_") + ".html"
         with open(os.path.join(cache_dir, filename), "r", encoding="utf-8") as f:
@@ -75,7 +78,9 @@ def parse_main_page(route="/ys/%E9%A6%96%E9%A1%B5"):
                         continue
 
 
-def parse_table(table):
+def parse_table(table, keys_to_delete=None, values_to_delete=None):
+    if values_to_delete is None:
+        values_to_delete = {"[[]]"}
     rows = table.find_all('tr')
     if len(rows[0].find_all("th")) > 1 and not rows[0].find_all("td"):
         table_type = "header_top"
@@ -149,6 +154,10 @@ def parse_table(table):
 
     if isinstance(info, dict):
         info = {k: v for k, v in info.items() if k and v}
+        if keys_to_delete:
+            info = {k: v for k, v in info.items() if k not in keys_to_delete}
+        if values_to_delete:
+            info = {k: v for k, v in info.items() if v not in values_to_delete}
     elif isinstance(info, list):
         info = [l for l in info if l]
     return info
@@ -642,11 +651,6 @@ def parse_furniture_suite_list(route="/ys/摆设套装一览"):
     return results
 
 
-def parse_task_item(route="/ys/%E4%BB%BB%E5%8A%A1%E9%81%93%E5%85%B7%E4%B8%80%E8%A7%88"):
-    # todo
-    pass
-
-
 def parse_geography_list(route="/ys/%E5%9C%B0%E7%90%86%E5%BF%97"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
@@ -1102,6 +1106,56 @@ def parse_library(route="/ys/%E5%8C%97%E9%99%86%E5%9B%BE%E4%B9%A6%E9%A6%86"):
     return results
 
 
+def parse_quest_item(url="https://wiki.biligame.com/ys/%E4%BB%BB%E5%8A%A1%E9%81%93%E5%85%B7%E4%B8%80%E8%A7%88"):
+    try:
+        from selenium import webdriver
+        from selenium.webdriver.chrome.service import Service
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.common.action_chains import ActionChains
+
+        options = webdriver.ChromeOptions()
+        options.headless = True
+        service = Service(executable_path=chromedriver_path)
+        driver = webdriver.Chrome(service=service, options=options)
+        actions = ActionChains(driver)
+    except:
+        print(traceback.format_exc())
+        return {}
+
+    driver.get(url)
+    time.sleep(5)
+    pages = driver.find_element(By.CSS_SELECTOR, "ul.pagination")
+    results = {}
+    rows = []
+    page_buttons = pages.find_elements(By.CSS_SELECTOR, "li")[1:-1]
+    for i, c in enumerate(page_buttons):
+        pages = driver.find_element(By.CSS_SELECTOR, "ul.pagination")
+        c = pages.find_elements(By.CSS_SELECTOR, "li")[1:-1][i]
+        page_button = c.find_element(By.CSS_SELECTOR, "a")
+        actions.move_to_element(page_button).perform()
+        page_button.click()
+        time.sleep(2)
+        html = driver.find_element(By.CSS_SELECTOR, "div#queryDataGrid").get_attribute("outerHTML")
+        soup = BeautifulSoup(html, 'html.parser')
+        found_rows = soup.find("table").find_all("tr")[1:]
+        print(f"found {len(found_rows)} items")
+        rows.extend(found_rows)
+    for tr in tqdm(rows):
+        a = tr.find_all("td")[1].find("a")
+        title, href = a["title"], a["href"]
+        if "index.php" in href:
+            continue
+        html = load_html_by_route(href)
+        soup = BeautifulSoup(html, 'html.parser')
+        table = soup.find("table")
+        if table:
+            info = parse_table(table, keys_to_delete="同类素材")
+            if info:
+                results[title] = info
+                print(title, results[title])
+    return results
+
+
 if __name__ == '__main__':
     # parse main page
     # parse_main_page()
@@ -1154,6 +1208,9 @@ if __name__ == '__main__':
             "北陆图书馆.json": parse_library,
             "过场提示.json": parse_tips,
             "黑话.json": parse_argot,
+        },
+        "任务道具": {
+            "任务道具.json": parse_quest_item
         }
     }
 

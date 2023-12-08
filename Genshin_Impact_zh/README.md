@@ -1,5 +1,12 @@
 # Genshin Impact Wiki zh
 
+### Requirements
+
+~~~
+Python 3.8+
+Selenium + chromedriver (only needed for 任务道具.json and 家具.json)
+~~~
+
 ### Data structure
 
 ~~~
@@ -14,6 +21,8 @@ data/
 │   ├── 传说任务.json
 │   ├── 委托任务.json
 │   └── 魔神任务.json
+├── 任务道具
+│   └── 任务道具.json
 ├── 成就一览
 │   └── 成就一览.json
 ├── 扩展阅读
@@ -57,4 +66,4 @@ python parse.py
 3. Obtain the data in data folder
 
 ### Known issues
-- There are two sections that have not been parsed yet: 家具 and 任务道具
+- There are 1 section that has not been parsed yet: 家具
