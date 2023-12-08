@@ -1,5 +1,11 @@
 # Honkai Star Rail Wiki zh
 
+### Current state
+
+Lots of wiki contents are under construction. So we'll have to wait for them. 
+
+Feel free to open an issue for what you want but does not exist in this repo.
+
 ### Requirements
 
 ~~~
