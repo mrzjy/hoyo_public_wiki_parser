@@ -14,6 +14,18 @@ This project parses Hoyoverse's game corpus from publicly available wiki, help y
 | Honkai: Star Rail | zh       | https://wiki.biligame.com/sr        | :rocket:              |
 | Honkai: Star Rail | en       | https://honkai-star-rail.fandom.com | :black_square_button: |
 
+### Social Media Source
+| Game               | Lang | Platform | Up-to-date |
+|--------------------|------|----------|------------|
+| Genshin Impact     | zh   | BiliBili | 2023-12-27 |
+| Honkai: Star Rail  | zh   | BiliBili | 2023-12-27 |
+| Honkai Impact 3rd  | zh   | BiliBili | 2023-12-27 |
+| Honkai Academy 2nd | zh   | BiliBili | 2023-12-27 |
+| Honkai: Star Rail  | zh   | BiliBili | 2023-12-27 |
+| Tears of themis    | zh   | BiliBili | 2023-12-27 |
+
+- Contents
+  - BiliBili (WIP): Dynamics (posts), Comments (Dynamic + Video + Popular top relevant videos) 
 
 ### Disclaimer
 

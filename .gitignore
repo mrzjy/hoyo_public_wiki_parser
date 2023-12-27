@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+# private
+private.py
+.cache
+
 # Distribution / packaging
 .Python
 .html
