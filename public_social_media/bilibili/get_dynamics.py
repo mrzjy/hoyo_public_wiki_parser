@@ -12,8 +12,8 @@ from utils.common import map_uid_to_title
 Code reference: https://github.com/Starrah/BilibiliGetDynamics
 """
 
-print("Available uids:")
-print(json.dumps(map_uid_to_title, ensure_ascii=False, indent=4))
+# print("Available uids:")
+# print(json.dumps(map_uid_to_title, ensure_ascii=False, indent=4))
 
 
 parser = argparse.ArgumentParser()
@@ -140,13 +140,6 @@ async def main():
 
 
 def update_merge():
-    if os.path.exists(f"{cache_dir}/dynamics.jsonl"):
-        with open(f'{cache_dir}/dynamics.jsonl', "r", encoding="UTF-8") as f:
-            new_dynamics = [json.loads(line) for line in f]
-    else:
-        print(f"No new dynamics found in {cache_dir}/dynamics.jsonl. No need to merge.")
-        return
-
     existing_dynamics = []
     existing_dynamic_ids = set()
     if os.path.exists(f"{directory}/dynamics.jsonl"):
@@ -156,10 +149,15 @@ def update_merge():
                 existing_dynamics.append(dynamic)
                 existing_dynamic_ids.add(dynamic["desc"]["dynamic_id"])
 
-    update_dynamics = existing_dynamics
-    for new_dynamic in new_dynamics:
-        if new_dynamic["desc"]["dynamic_id"] not in existing_dynamic_ids:
-            update_dynamics.insert(0, new_dynamic)
+    if os.path.exists(f"{cache_dir}/dynamics.jsonl"):
+        with open(f'{cache_dir}/dynamics.jsonl', "r", encoding="UTF-8") as f:
+            new_dynamics = [json.loads(line) for line in f]
+            new_dynamics = [n for n in new_dynamics if n["desc"]["dynamic_id"] not in existing_dynamic_ids]
+    else:
+        print(f"No new dynamics found in {cache_dir}/dynamics.jsonl. No need to merge.")
+        return
+
+    update_dynamics = new_dynamics + existing_dynamics
     with open(f'{directory}/dynamics.jsonl', "w", encoding="UTF-8") as f:
         for dynamic in update_dynamics:
             print(json.dumps(dynamic, ensure_ascii=False), file=f)

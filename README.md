@@ -21,7 +21,6 @@ This project parses Hoyoverse's game corpus from publicly available wiki, help y
 | Honkai: Star Rail  | zh   | BiliBili | 2023-12-27 |
 | Honkai Impact 3rd  | zh   | BiliBili | 2023-12-27 |
 | Honkai Academy 2nd | zh   | BiliBili | 2023-12-27 |
-| Honkai: Star Rail  | zh   | BiliBili | 2023-12-27 |
 | Tears of themis    | zh   | BiliBili | 2023-12-27 |
 
 - Contents
