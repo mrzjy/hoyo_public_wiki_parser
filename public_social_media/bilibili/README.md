@@ -13,6 +13,20 @@ This directory parses Hoyoverse-related social media content from BiliBili, such
 
 ### Steps
 
+- Fill your credential info by creating a "private.py" in the utils folder
+
+~~~private.py
+from bilibili_api import Credential
+
+credential = Credential(
+    sessdata="your_sessdata",
+    bili_jct="your_bili_jct",
+    buvid3="your buvid3",
+)
+~~~
+
+Please refer to [this manual](https://nemo2011.github.io/bilibili-api/#/get-credential) to find your corresponding information 
+
 - Get or Update posts (dynamics) from Hoyoverse's official accounts
 
 ~~~
