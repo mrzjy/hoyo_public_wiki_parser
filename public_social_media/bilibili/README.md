@@ -13,7 +13,9 @@ This directory parses Hoyoverse-related social media content from BiliBili, such
 
 ### Steps
 
-- Fill your credential info by creating a "private.py" in the utils folder
+In principle, we use sqlite3 database to store the posts/comments data, which is easy to maintain (e.g., supporting insertion).
+
+0. Fill your credential info by creating a "private.py" in the utils folder
 
 ~~~private.py
 from bilibili_api import Credential
