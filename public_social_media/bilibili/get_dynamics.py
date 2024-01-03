@@ -19,7 +19,7 @@ Code reference: https://github.com/Starrah/BilibiliGetDynamics
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--uid', default="27534330", help="uid", choices=list(map_uid_to_title.keys()))
+parser.add_argument('--uid', default="1636034895", help="uid", choices=list(map_uid_to_title.keys()))
 args = parser.parse_args()
 
 u = user.User(uid=int(args.uid))
@@ -59,8 +59,10 @@ async def main():
     cursor.execute('SELECT time FROM dynamic')
     previous_times = [result[0] for result in cursor.fetchall()]
     previous_times.sort()
-    prev_date = datetime.datetime.fromtimestamp(previous_times[-1]).date()
-    print(f"Already stored: {len(existing_dynamic_ids)} dynamics until {prev_date}")
+    prev_date = "None"
+    if previous_times:
+        prev_date = datetime.datetime.fromtimestamp(previous_times[-1]).date()
+        print(f"Already stored: {len(existing_dynamic_ids)} dynamics until {prev_date}")
 
     offset = 0
     count = 0

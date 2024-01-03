@@ -9,6 +9,7 @@ __pycache__/
 # private
 private.py
 .cache
+.db
 
 # Distribution / packaging
 .Python

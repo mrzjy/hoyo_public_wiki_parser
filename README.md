@@ -2,9 +2,9 @@
 
 ### Introduction
 
-本项目用于获取开源WIKI中的米哈游游戏的结构化/非结构化文本语料。数据与代码在各自的文件夹内。
+本项目用于获取开源WIKI / 社交媒体中的米哈游游戏的结构化 / 非结构化文本语料。数据与代码在各自的文件夹内。
 
-This project parses Hoyoverse's game corpus from publicly available wiki, help you obtain structured / un-structured Hoyo's text corpus. You can find data and code in each corresponding directory.
+This project parses Hoyoverse's game corpus from publicly available wiki / social media, help you obtain structured / un-structured Hoyo's text corpus. You can find data and code in each corresponding directory.
 
 ### Wiki Source
 | Game              | Language | Website                             | Status                |
@@ -30,8 +30,10 @@ This project parses Hoyoverse's game corpus from publicly available wiki, help y
 
 - 请尊重粉丝们创建的WIKI内容，这些数据十分珍贵。
 - 作者能力精力有限，难免会有bug，代码并不好看，如有需要请提 issue 或者直接提 PR（作者回复速度也很慢）。
+- 社交媒体内容不可避免会包含不友好的发言评论，请理性看待与利用。
 
 ### Disclaimer (En)
 
 - Please be respectful for these precious fan-made wiki.
 - The author is an amateur, so there might be potentially bugs. You can create issues or open PRs. Do note that the author is not very responsive.
+- Social media content inevitably includes unfriendly comments. Please approach and utilize them rationally.
