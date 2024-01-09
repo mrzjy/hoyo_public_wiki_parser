@@ -8,5 +8,5 @@ python generate_final_output.py --uid=27534330 --output_json --min_like=500
 python generate_final_output.py --uid=436175352 --output_json --min_like=500
 :: honkai_academy_2
 python generate_final_output.py --uid=133934 --output_json --min_like=500
-:: zenless
+:: zenless_zone_zero
 python generate_final_output.py --uid=1636034895 --output_json --min_like=500

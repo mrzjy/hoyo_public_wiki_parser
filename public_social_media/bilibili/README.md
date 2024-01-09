@@ -2,6 +2,8 @@
 
 This directory parses Hoyoverse-related social media content from BiliBili, such as posts, comments, etc.
 
+The files in data folder are collections of comments that have more than 500 likes under each post. If you wish to reproduce and get unlimited comments, you can follow the steps below.
+
 ### Supported Account
 | Game               | Account Name                                        |
 |--------------------|-----------------------------------------------------|
@@ -10,6 +12,7 @@ This directory parses Hoyoverse-related social media content from BiliBili, such
 | Honkai Impact 3rd  | [崩坏3第一偶像爱酱](https://space.bilibili.com/27534330/)   |
 | Honkai Academy 2nd | [崩坏学园2-灵依娘desu](https://space.bilibili.com/133934/) |
 | Tears of themis    | [未定事件簿](https://space.bilibili.com/436175352/)      |
+| Zenless Zone Zero  | [绝区零](https://space.bilibili.com/1636034895/)      |
 
 ### Steps
 

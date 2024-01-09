@@ -8,3 +8,5 @@ python get_comments.py --uid=27534330
 python get_comments.py --uid=436175352
 :: honkai_academy_2
 python get_comments.py --uid=133934
+:: zenless_zone_zero
+python get_comments.py --uid=1636034895
