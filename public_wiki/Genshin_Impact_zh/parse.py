@@ -14,30 +14,31 @@ cache_dir = "D:/data/biligame/genshin"
 chromedriver_path = "D:/tools/chromedriver-win64/chromedriver.exe"
 
 
-def load_html_by_route(route):
-    route = re.sub("https://wiki.biligame.com", "", route)
+def load_html_by_route(route, force_update=False):
     try:
+        assert not force_update
         filename = "wiki.biligame.com" + route.replace("/", "_") + ".html"
         with open(os.path.join(cache_dir, filename), "r", encoding="utf-8") as f:
             html = f.read()
-    except FileNotFoundError:
+    except (FileNotFoundError, AssertionError):
         print("filename not found", route)
         if route.startswith("/"):
             route = route[1:]
         url = f"https://wiki.biligame.com/{route}"
         html = requests.get(url).text
-        save_html(url, html)
+        save_html(url, html, force_update)
     return html
 
 
-def save_html(page_url, html_content):
+
+def save_html(page_url, html_content, force_update=False):
     # convert URL into a valid filename
     filename = page_url.replace("http://", "").replace("https://", "").replace("/", "_") + ".html"
     filepath = os.path.join(cache_dir, filename)
     directory = os.path.dirname(filepath)
     if not os.path.exists(directory):
         os.makedirs(directory)
-    if not os.path.exists(filepath):
+    if not os.path.exists(filepath) or force_update:
         try:
             with open(filepath, 'w', encoding="utf-8") as f:
                 f.write(html_content)
@@ -51,6 +52,7 @@ def save_html(page_url, html_content):
                 print(filename, " saved.")
         except:
             print(traceback.format_exc())
+
 
 
 def parse_main_page(route="/ys/%E9%A6%96%E9%A1%B5"):
@@ -167,18 +169,17 @@ def parse_character_list(route="/ys/%E8%A7%92%E8%89%B2"):
     html = load_html_by_route(route)
     soup = BeautifulSoup(html, 'html.parser')
     results = {}
-    tab_contents = soup.find_all(class_="resp-tab-content")
-    for tab_content in tab_contents:
-        tabs = tab_content.find_all(class_="g C5星")
-        tabs += tab_content.find_all(class_="g C4星")
-        for tab in tabs:
-            title = tab.find(class_="L").text
-            link = tab.find_all("a")[-1]["href"]
-            if title in results:
-                continue
-            # parse each character page
-            results[title] = parse_character_info(link)
-            print(f"{title} {results[title]}")
+    tab_contents = soup.find(class_="resp-tab-case")
+    tabs = tab_contents.find_all(class_="divsort g C5星")
+    tabs += tab_contents.find_all(class_="divsort g C4星")
+    for tab in tabs:
+        title = tab.find(class_="L").text
+        link = tab.find_all("a")[-1]["href"]
+        if title in results:
+            continue
+        # parse each character page
+        results[title] = parse_character_info(link)
+        print(f"{title} {results[title]}")
     return results
 
 
@@ -403,7 +404,7 @@ def parse_relic(route):
 
 
 def parse_npc_list(route="/ys/NPC%E5%9B%BE%E9%89%B4"):
-    html = load_html_by_route(route)
+    html = load_html_by_route(route, force_update=True)
     soup = BeautifulSoup(html, 'html.parser')
     results = {}
     npcs = list(soup.find_all("div", class_="giconCard"))
@@ -647,7 +648,7 @@ def parse_furniture_suite_list(route="/ys/摆设套装一览"):
 
 
 def parse_geography_list(route="/ys/%E5%9C%B0%E7%90%86%E5%BF%97"):
-    html = load_html_by_route(route)
+    html = load_html_by_route(route, force_update=True)
     soup = BeautifulSoup(html, 'html.parser')
     results = {}
     for area in soup.find('span', class_="mw-headline").find_next("div").find_all('a'):
@@ -669,7 +670,7 @@ def parse_geography(route):
 
 
 def parse_archon_quest_list(route="/ys/%E9%AD%94%E7%A5%9E%E4%BB%BB%E5%8A%A1"):
-    html = load_html_by_route(route)
+    html = load_html_by_route(route, force_update=True)
     soup = BeautifulSoup(html, 'html.parser')
     results = {}
     for task in soup.find_all("div", class_="taskIcon"):
@@ -761,19 +762,20 @@ def parse_node(node, add_asterisk=False):
 
 
 def parse_legend_quest_list(route="/ys/%E4%BC%A0%E8%AF%B4%E4%BB%BB%E5%8A%A1"):
-    html = load_html_by_route(route)
+    html = load_html_by_route(route, force_update=True)
     soup = BeautifulSoup(html, 'html.parser')
     results = {}
     for task in soup.find_all("div", class_="taskIcon"):
         info = task.find("a")
         title, href = info["title"], info["href"]
-        if title not in results and re.search("第.+幕", title):
+        if title not in results:
             try:
                 data = parse_legend_quest(href)
                 if data:
                     results[title] = data
                     print(results[title])
             except:
+                print(traceback.format_exc())
                 continue
     return results
 
@@ -783,18 +785,21 @@ def parse_legend_quest(route):
     soup = BeautifulSoup(html, 'html.parser')
     info = {}
     for hint in soup.find_all("div", class_="tishi"):
-        hint = hint.find("a")
-        href, title = hint["href"], hint["title"]
         try:
+            hint = hint.find("a")
+            href, title = hint["href"], hint["title"]
+            if "FAQ" in title:
+                continue
             info[title] = parse_common_quest(href)
         except:
-            print(title, traceback.format_exc())
             continue
+    if not info:
+        info = parse_common_quest(route)
     return info
 
 
 def parse_world_quest_list(route="/ys/%E4%B8%96%E7%95%8C%E4%BB%BB%E5%8A%A1"):
-    html = load_html_by_route(route)
+    html = load_html_by_route(route, force_update=True)
     soup = BeautifulSoup(html, 'html.parser')
     results = {}
     tasks = list(soup.find_all("span", class_="home-an1"))
@@ -823,7 +828,7 @@ def parse_world_quest(route):
 
 
 def parse_commission_quest_list(route="/ys/%E5%A7%94%E6%89%98%E4%BB%BB%E5%8A%A1"):
-    html = load_html_by_route(route)
+    html = load_html_by_route(route, force_update=True)
     soup = BeautifulSoup(html, 'html.parser')
     output = []
     tasks = list(soup.find_all("div", class_="tishi"))
@@ -843,14 +848,14 @@ def parse_commission_quest_list(route="/ys/%E5%A7%94%E6%89%98%E4%BB%BB%E5%8A%A1"
 
 
 def parse_birthday_email_list(route="/ys/邮件"):
-    html = load_html_by_route(route)
+    html = load_html_by_route(route, force_update=True)
     soup = BeautifulSoup(html, 'html.parser')
     results = []
     table = soup.find("table", {"id": "CardSelectTr"})
     rows = table.find_all('tr')
     header_row = rows[0]
     headers = [header.text.strip() for header in header_row.find_all('th')]
-    for row in rows[1:]:
+    for row in tqdm(rows[1:]):
         cells = [re.sub(r"(^图)*\s+", " ", cell.get_text()).strip() for cell in row.find_all('td')]
         info = {}
         for header, cell in zip(headers, cells):
@@ -866,35 +871,18 @@ def parse_birthday_email_list(route="/ys/邮件"):
     return results
 
 
-def parse_monster_list(route="/ys/%E6%80%AA%E7%89%A9%E4%B8%80%E8%A7%88"):
-    html = load_html_by_route(route)
+def parse_monster_list(route="/ys/怪物图鉴"):
+    html = load_html_by_route(route, force_update=True)
     soup = BeautifulSoup(html, 'html.parser')
     results = {}
-    table = soup.find("table", {"id": "CardSelectTr"})
-    rows = table.find_all('tr')
-    header_row = rows[0]
-    headers = [header.text.strip() for header in header_row.find_all('th')][1:]
-    for row in tqdm(rows[1:]):
-        cells = []
-        for j, cell in enumerate(row.find_all('td')[1:]):
-            cell = re.sub(r"(^图)*\s+", " ", cell.get_text()).strip()
-            cells.append(cell)
-
-        link = row.find("a")
-        if "index.php" in link["href"]:
-            continue
-
-        name = cells[0]
-        if name not in results:
-            results[name] = {"basic": {}, "detail": {}}
-        for header, cell in zip(headers, cells):
-            if cell:
-                results[name]["basic"][header] = cell
-
-        data = parse_monster(link["href"])
+    entities = soup.find("div", class_="resp-tabs-container").find_all("div", class_="gicon m")
+    for entity in tqdm(entities):
+        entity = entity.find_all("a")[-1]
+        name = entity["title"]
+        data = parse_monster(entity["href"])
         if data:
-            results[name]["detail"] = data
-        print(results[name])
+            results[name] = data
+        print(name, results[name])
     return results
 
 
@@ -918,9 +906,11 @@ def parse_monster(route):
                 for subsection in sibling.find_all("span", class_="m-skill-p"):
                     content = ""
                     for s in subsection.next_siblings:
-                        if s.name == "span" and s.has_attr("class"):
+                        if isinstance(s, element.NavigableString):
+                            content += s.strip()
+                        elif s.name == "span" and s.has_attr("class"):
                             break
-                        if s.text.strip():
+                        elif s.text.strip():
                             content += f"{s.text.strip()}"
                     if content.strip():
                         content = f"{subsection.text.strip()}: {content.strip()}"
@@ -940,7 +930,7 @@ def parse_monster(route):
 
 
 def parse_animal_list(route="/ys/%E9%87%8E%E7%94%9F%E7%94%9F%E7%89%A9%E4%B8%80%E8%A7%88"):
-    html = load_html_by_route(route)
+    html = load_html_by_route(route, force_update=True)
     soup = BeautifulSoup(html, 'html.parser')
     results = {}
     table = soup.find("table", {"id": "CardSelectTr"})
@@ -1041,7 +1031,7 @@ def parse_tips(route="/ys/%E8%BF%87%E5%9C%BA%E6%8F%90%E7%A4%BA"):
 
 
 def parse_book_list(route="/ys/%E4%B9%A6%E7%B1%8D%E4%B8%80%E8%A7%88"):
-    html = load_html_by_route(route)
+    html = load_html_by_route(route, force_update=True)
     soup = BeautifulSoup(html, 'html.parser')
     info = {}
     for a in soup.find("div", class_="tishi").find_all_next("a")[1:]:
@@ -1075,7 +1065,7 @@ def parse_achievement(route):
 
 
 def parse_library(route="/ys/%E5%8C%97%E9%99%86%E5%9B%BE%E4%B9%A6%E9%A6%86"):
-    html = load_html_by_route(route)
+    html = load_html_by_route(route, force_update=True)
     soup = BeautifulSoup(html, 'html.parser')
     results = {}
     for i, menu in enumerate(soup.find_all("div", class_="menu")):
