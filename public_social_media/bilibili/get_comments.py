@@ -18,7 +18,7 @@ from utils.common import map_uid_to_title
 MAX_PAGE_NUM = 10
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--uid', default="1636034895", help="uid", choices=list(map_uid_to_title.keys()))
+parser.add_argument('--uid', default="401742377", help="uid", choices=list(map_uid_to_title.keys()))
 args = parser.parse_args()
 
 db_name = f".db/{map_uid_to_title[args.uid]}.db"
@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS comment (
     json TEXT NOT NULL
 )
 ''')
+    print("reading previous comments...")
     cursor.execute('SELECT d_id FROM comment')
     dynamics_already_parsed = set([result[0] for result in cursor.fetchall()])
     cursor.execute('SELECT id, json FROM dynamic')
@@ -51,7 +52,7 @@ CREATE TABLE IF NOT EXISTS comment (
         oid = dynamic_id
         type_ = CommentResourceType.DYNAMIC
         max_page_num = MAX_PAGE_NUM
-        if "bvid" in dynamic["desc"]:
+        if dynamic["desc"].get("bvid"):
             oid = dynamic["card"]["aid"]
             type_ = CommentResourceType.VIDEO
             max_page_num = MAX_PAGE_NUM * 2
@@ -107,7 +108,7 @@ CREATE TABLE IF NOT EXISTS comment (
             except:
                 print(traceback.format_exc())
                 break
-            await asyncio.sleep(random.random() * 1.5)
+            await asyncio.sleep(random.random() * 2.5)
     print("--------已完成！---------")
 
 

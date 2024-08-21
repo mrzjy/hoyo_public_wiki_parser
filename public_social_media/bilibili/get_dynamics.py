@@ -8,6 +8,7 @@ import sqlite3
 import aiohttp
 from bilibili_api import user
 from utils.common import map_uid_to_title
+from utils.private import credential
 
 
 """
@@ -19,10 +20,10 @@ Code reference: https://github.com/Starrah/BilibiliGetDynamics
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--uid', default="1636034895", help="uid", choices=list(map_uid_to_title.keys()))
+parser.add_argument('--uid', default="401742377", help="uid", choices=list(map_uid_to_title.keys()))
 args = parser.parse_args()
 
-u = user.User(uid=int(args.uid))
+u = user.User(uid=int(args.uid), credential=credential)
 
 os.makedirs(".db", exist_ok=True)
 db_name = f".db/{map_uid_to_title[args.uid]}.db"
@@ -70,11 +71,18 @@ async def main():
     while True:
         if count % 10 == 0:
             print(count)
-        res = await u.get_dynamics(offset)
+        try:
+            res = await u.get_dynamics(offset)
+        except:
+            await asyncio.sleep(3)
+            res = await u.get_dynamics(offset)
         if res["has_more"] != 1:
             break
         offset = res["next_offset"]
         for card in res["cards"]:
+            # if card["desc"]["dynamic_id"] == 884110427985805319:
+            #     early_break = True
+            #     break
             if card["desc"]["dynamic_id"] in existing_dynamic_ids:
                 early_break = True
                 break
@@ -88,7 +96,7 @@ async def main():
         if early_break:
             print("early break")
             break
-        await asyncio.sleep(1)
+        await asyncio.sleep(3)
 
     print("--------已完成！---------")
     cursor.execute('SELECT time FROM dynamic')
